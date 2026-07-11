@@ -1704,6 +1704,10 @@ function renderMyProducts(){
           openWorkbook1();
           return;
         }
+        if(lvl.n === 2){
+          openWorkbook2();
+          return;
+        }
         openContentModal({
           num: 'Niveau ' + lvl.n,
           tag: 'Niveau ' + lvl.n + ' · Débloqué',
@@ -3070,6 +3074,346 @@ function openWorkbook1(){
     eyebrow: 'Niveau 1 · Reprendre le Contrôle'
   });
 }
+
+/* ========================================================================
+   NIVEAU 2 — "STABILISER TA BASE" (8 exercices)
+   Généré dans la même logique que les niveaux précédents, adapté au thème :
+   construire une base solide — épargne de sécurité, habitudes, environnement,
+   discipline, premiers pas vers l'investissement — sur laquelle bâtir la suite.
+   Pas de lettre d'engagement ici : la stabilisation se prouve par des systèmes
+   tenus dans la durée, pas par une déclaration ponctuelle — d'où le défi 21 jours
+   en clôture, plus cohérent avec le thème.
+   ======================================================================== */
+const NIV2_KEY = 'systemeInvisible_niveau2';
+const NIV2_LAST_SECTION_KEY = 'systemeInvisible_niveau2_lastSection';
+const NIV2_DEFAULT = {
+  diag: {
+    epargne: [false,false,false,false],
+    habitudes: [false,false,false,false],
+    environnement: [false,false,false,false],
+    discipline: [false,false,false,false]
+  },
+  fonds: { depensesMensuelles:'', moisVises:'', dejaEpargne:'', epargneMensuelle:'' },
+  habitudesList: Array(10).fill(false),
+  environnementList: Array(10).fill(false),
+  disciplineList: Array(8).fill(false),
+  investir: { checklist: Array(6).fill(false), premierSupport:'', montantDepart:'' },
+  equilibre: {
+    revenus:Array(12).fill(''), depenses:Array(12).fill(''), epargne:Array(12).fill(''), solde:Array(12).fill('')
+  },
+  defi21: Array.from({length:6},()=>Array(21).fill(false))
+};
+
+function renderNiv2Diag(container){
+  const cats = [
+    {key:'epargne', label:'Épargne', items:[
+      "J'ai commencé à me constituer une épargne de sécurité.",
+      "Mon épargne se met de côté automatiquement chaque mois.",
+      "Je sais combien de mois de dépenses je pourrais couvrir aujourd'hui.",
+      "Je ne touche pas à cette épargne pour des dépenses courantes."
+    ]},
+    {key:'habitudes', label:'Habitudes', items:[
+      "J'ai une routine stable (sommeil, repas, travail).",
+      "Je tiens mes habitudes même les jours difficiles.",
+      "Mes habitudes actuelles me rapprochent de mes objectifs.",
+      "Je ne remets pas systématiquement au lendemain."
+    ]},
+    {key:'environnement', label:'Environnement', items:[
+      "Mon espace de vie/travail est rangé et clair.",
+      "Mon environnement numérique (fichiers, notifications) est sous contrôle.",
+      "Les personnes autour de moi soutiennent ma progression.",
+      "J'ai réduit les sources de distraction récurrentes."
+    ]},
+    {key:'discipline', label:'Discipline', items:[
+      "Je respecte les plans que je me fixe, même sans motivation.",
+      "J'ai des systèmes qui fonctionnent sans dépendre de ma volonté du jour.",
+      "Je mesure régulièrement où j'en suis.",
+      "Je corrige rapidement quand je m'écarte du plan."
+    ]}
+  ];
+  let html = `<p class="wb-intro">Une base stable repose sur quatre piliers : épargne, habitudes, environnement, discipline. Coche ce qui est déjà vrai pour toi.</p>`;
+  cats.forEach(cat=>{
+    html += `<div class="wb-block" data-cat="${cat.key}">
+      <div class="wb-block-title">${cat.label} <span class="wb-score" data-score-for="${cat.key}"></span></div>
+      ${cat.items.map((label,i)=>`
+        <label class="wb-check-row">
+          <input type="checkbox" data-diag2-cat="${cat.key}" data-diag2-idx="${i}" ${WB_DATA.diag[cat.key][i]?'checked':''}>
+          <span class="wb-check-box">✓</span>
+          <span class="wb-label">${label}</span>
+        </label>
+      `).join('')}
+    </div>`;
+  });
+  html += `<div class="wb-block"><div class="wb-block-title">Indice de stabilité <span class="wb-score" id="wbDiag2Global"></span></div></div>`;
+  container.innerHTML = html;
+  updateDiag2Scores();
+  container.querySelectorAll('input[data-diag2-cat]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.diag[inp.dataset.diag2Cat][parseInt(inp.dataset.diag2Idx)] = inp.checked;
+      updateDiag2Scores();
+      saveWbData();
+      updateWbToc();
+    });
+  });
+}
+function updateDiag2Scores(){
+  const cats = {epargne:4, habitudes:4, environnement:4, discipline:4};
+  let total=0, max=0;
+  Object.keys(cats).forEach(k=>{
+    const score = WB_DATA.diag[k].filter(Boolean).length;
+    total += score; max += cats[k];
+    const el = document.querySelector(`[data-score-for="${k}"]`);
+    if(el) el.textContent = 'Score : ' + score + '/' + cats[k];
+  });
+  const g = document.getElementById('wbDiag2Global');
+  if(g) g.textContent = total + '/' + max;
+}
+
+function renderNiv2Fonds(container){
+  container.innerHTML = `<p class="wb-intro">Un fonds de sécurité, c'est ce qui te permet d'encaisser un imprévu sans repartir de zéro. Vise entre 3 et 6 mois de dépenses.</p>
+    <div class="wb-grid-2">
+      <div class="wb-field"><label>Mes dépenses mensuelles (€)</label>
+        <input type="number" class="wb-input" id="wbFondsDep" value="${escapeAttr(WB_DATA.fonds.depensesMensuelles)}" placeholder="ex : 1500"></div>
+      <div class="wb-field"><label>Nombre de mois de sécurité visés</label>
+        <input type="number" class="wb-input" id="wbFondsMois" value="${escapeAttr(WB_DATA.fonds.moisVises)}" placeholder="ex : 3 à 6"></div>
+      <div class="wb-field"><label>Ce que j'ai déjà épargné (€)</label>
+        <input type="number" class="wb-input" id="wbFondsDeja" value="${escapeAttr(WB_DATA.fonds.dejaEpargne)}" placeholder="ex : 800"></div>
+      <div class="wb-field"><label>Ce que je peux épargner chaque mois (€)</label>
+        <input type="number" class="wb-input" id="wbFondsMensuel" value="${escapeAttr(WB_DATA.fonds.epargneMensuelle)}" placeholder="ex : 150"></div>
+    </div>
+    <div class="wb-totals">
+      <div class="wb-total-item">Objectif à atteindre<b id="wbFondsObjectif">0 €</b></div>
+      <div class="wb-total-item">Il te reste<b id="wbFondsReste">0 €</b></div>
+      <div class="wb-total-item">Temps estimé pour l'atteindre<b id="wbFondsTemps">—</b></div>
+    </div>`;
+  updateFondsCalc();
+  const ids = ['wbFondsDep','wbFondsMois','wbFondsDeja','wbFondsMensuel'];
+  const inputs = ids.map(id=>document.getElementById(id));
+  inputs.forEach(inp=>{
+    inp.addEventListener('input', debounce(()=>{
+      WB_DATA.fonds.depensesMensuelles = inputs[0].value;
+      WB_DATA.fonds.moisVises = inputs[1].value;
+      WB_DATA.fonds.dejaEpargne = inputs[2].value;
+      WB_DATA.fonds.epargneMensuelle = inputs[3].value;
+      updateFondsCalc(); saveWbData(); updateWbToc();
+    }, 350));
+  });
+}
+function updateFondsCalc(){
+  const depEl = document.getElementById('wbFondsDep');
+  const moisEl = document.getElementById('wbFondsMois');
+  const dejaEl = document.getElementById('wbFondsDeja');
+  const mensuelEl = document.getElementById('wbFondsMensuel');
+  const objEl = document.getElementById('wbFondsObjectif');
+  const resteEl = document.getElementById('wbFondsReste');
+  const tempsEl = document.getElementById('wbFondsTemps');
+  if(!depEl || !objEl) return;
+  const dep = parseFloat(depEl.value) || 0;
+  const mois = parseFloat(moisEl.value) || 0;
+  const deja = parseFloat(dejaEl.value) || 0;
+  const mensuel = parseFloat(mensuelEl.value) || 0;
+  const objectif = dep * mois;
+  const reste = Math.max(objectif - deja, 0);
+  objEl.textContent = objectif.toFixed(0) + ' €';
+  resteEl.textContent = reste.toFixed(0) + ' €';
+  tempsEl.textContent = (mensuel>0 && reste>0) ? Math.ceil(reste/mensuel) + ' mois' : (reste===0 && objectif>0 ? 'Objectif atteint ✓' : '—');
+}
+
+function renderNiv2Habitudes(container){
+  const items = ["Se coucher et se lever à heures régulières","Faire une activité physique chaque semaine","Préparer ses repas à l'avance","Planifier sa semaine le dimanche","Faire un bilan quotidien de 5 minutes","Lire ou apprendre chaque jour","Limiter le temps d'écran le soir","Avoir un rituel du matin","Avoir un rituel du soir","Tenir un suivi de ses habitudes"];
+  container.innerHTML = `<p class="wb-intro">Coche les habitudes que tu es prêt à stabiliser dans ton quotidien.</p><div class="wb-block">
+  ${items.map((label,i)=>`
+    <label class="wb-check-row">
+      <input type="checkbox" data-hab-idx="${i}" ${WB_DATA.habitudesList[i]?'checked':''}>
+      <span class="wb-check-box">✓</span>
+      <span class="wb-label">${label}</span>
+    </label>
+  `).join('')}
+  </div>`;
+  container.querySelectorAll('input[data-hab-idx]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.habitudesList[parseInt(inp.dataset.habIdx)] = inp.checked;
+      saveWbData(); updateWbToc();
+    });
+  });
+}
+
+function renderNiv2Environnement(container){
+  const items = ["Ranger et désencombrer mon espace de travail","Trier mes fichiers et dossiers numériques","Désactiver les notifications inutiles","Nettoyer mes abonnements et réseaux sociaux","Créer un espace dédié pour travailler/construire","Réduire les objets qui ne servent plus","Organiser mes documents administratifs importants","Éloigner les sources de distraction de mon espace","M'entourer de personnes qui tirent vers le haut","Limiter le temps passé avec ce qui me tire vers le bas"];
+  container.innerHTML = `<p class="wb-intro">Ton environnement influence directement ta discipline. Coche ce que tu es prêt à nettoyer ou réorganiser.</p><div class="wb-block">
+  ${items.map((label,i)=>`
+    <label class="wb-check-row">
+      <input type="checkbox" data-env-idx="${i}" ${WB_DATA.environnementList[i]?'checked':''}>
+      <span class="wb-check-box">✓</span>
+      <span class="wb-label">${label}</span>
+    </label>
+  `).join('')}
+  </div>`;
+  container.querySelectorAll('input[data-env-idx]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.environnementList[parseInt(inp.dataset.envIdx)] = inp.checked;
+      saveWbData(); updateWbToc();
+    });
+  });
+}
+
+function renderNiv2Discipline(container){
+  const items = ["Planifier mes priorités chaque semaine","Travailler sur mes projets avant mes loisirs","Fixer des deadlines même sans contrainte extérieure","Suivre un indicateur clé chaque semaine","Faire un bilan mensuel de mes progrès","Éviter de dépendre uniquement de ma motivation","Prévoir un système de rattrapage si je manque un jour","Célébrer mes progrès, même petits"];
+  container.innerHTML = `<p class="wb-intro">La discipline, ce sont des systèmes qui tiennent sans toi. Coche ceux que tu mets en place.</p><div class="wb-block">
+  ${items.map((label,i)=>`
+    <label class="wb-check-row">
+      <input type="checkbox" data-disc-idx="${i}" ${WB_DATA.disciplineList[i]?'checked':''}>
+      <span class="wb-check-box">✓</span>
+      <span class="wb-label">${label}</span>
+    </label>
+  `).join('')}
+  </div>`;
+  container.querySelectorAll('input[data-disc-idx]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.disciplineList[parseInt(inp.dataset.discIdx)] = inp.checked;
+      saveWbData(); updateWbToc();
+    });
+  });
+}
+
+function renderNiv2Investir(container){
+  const items = ["Ouvrir un livret ou compte d'épargne dédié","Ouvrir un compte titres ou PEA","Faire mon premier versement, même petit","Programmer un versement automatique mensuel","Comprendre la différence entre épargne et investissement","Choisir un premier support simple (ETF, fonds euro…)"];
+  container.innerHTML = `<p class="wb-intro">Stabiliser sa base, c'est aussi commencer à faire travailler son argent, même modestement.</p><div class="wb-block">
+  ${items.map((label,i)=>`
+    <label class="wb-check-row">
+      <input type="checkbox" data-inv-idx="${i}" ${WB_DATA.investir.checklist[i]?'checked':''}>
+      <span class="wb-check-box">✓</span>
+      <span class="wb-label">${label}</span>
+    </label>
+  `).join('')}
+  </div>
+  <div class="wb-field" style="margin-top:16px;">
+    <label>Quel premier support envisages-tu ?</label>
+    <input type="text" class="wb-input" id="wbInvSupport" value="${escapeAttr(WB_DATA.investir.premierSupport)}" placeholder="ex : ETF Monde, fonds euro, livret…">
+  </div>
+  <div class="wb-field">
+    <label>Montant de départ envisagé (€)</label>
+    <input type="number" class="wb-input" id="wbInvMontant" value="${escapeAttr(WB_DATA.investir.montantDepart)}" placeholder="ex : 100">
+  </div>`;
+  container.querySelectorAll('input[data-inv-idx]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.investir.checklist[parseInt(inp.dataset.invIdx)] = inp.checked;
+      saveWbData(); updateWbToc();
+    });
+  });
+  const supportInp = document.getElementById('wbInvSupport');
+  supportInp.addEventListener('input', debounce(()=>{
+    WB_DATA.investir.premierSupport = supportInp.value;
+    saveWbData(); updateWbToc();
+  }, 400));
+  const montantInp = document.getElementById('wbInvMontant');
+  montantInp.addEventListener('input', debounce(()=>{
+    WB_DATA.investir.montantDepart = montantInp.value;
+    saveWbData(); updateWbToc();
+  }, 400));
+}
+
+function renderNiv2Equilibre(container){
+  const rows = [
+    {key:'revenus', label:'Revenus'},
+    {key:'depenses', label:'Dépenses'},
+    {key:'epargne', label:'Épargne'},
+    {key:'solde', label:'Solde'}
+  ];
+  const months = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc'];
+  container.innerHTML = `<p class="wb-intro">Suis ton équilibre mensuel. La stabilité se mesure dans la durée, pas en un mois.</p>
+    <div class="wb-dash-table-wrap"><table class="wb-dash-table">
+      <thead><tr><th>Indicateur</th>${months.map(m=>`<th>${m}</th>`).join('')}</tr></thead>
+      <tbody>
+        ${rows.map(r=>`
+          <tr>
+            <td>${r.label}</td>
+            ${months.map((m,mi)=>`<td><input type="text" data-equi-row="${r.key}" data-equi-m="${mi}" value="${escapeAttr(WB_DATA.equilibre[r.key][mi])}"></td>`).join('')}
+          </tr>
+        `).join('')}
+      </tbody>
+    </table></div>`;
+  container.querySelectorAll('input[data-equi-row]').forEach(inp=>{
+    inp.addEventListener('input', debounce(()=>{
+      WB_DATA.equilibre[inp.dataset.equiRow][parseInt(inp.dataset.equiM)] = inp.value;
+      saveWbData(); updateWbToc();
+    }, 400));
+  });
+}
+
+function renderNiv2Defi21(container){
+  const habits = ["Respecter mon budget","Épargner ou investir","Tenir ma routine du matin","Tenir ma routine du soir","Garder mon espace rangé","Avancer sur mes systèmes de discipline"];
+  container.innerHTML = `<p class="wb-intro">21 jours pour ancrer une base stable. Chaque case cochée est une preuve que tu tiens, pas juste que tu commences.</p>
+    <div class="wb-challenge-legend" id="wbDefi21Count"></div>
+    <div class="wb-challenge-wrap"><table class="wb-challenge">
+      <thead><tr><th>Habitude</th>${Array.from({length:21},(_,i)=>`<th>${i+1}</th>`).join('')}</tr></thead>
+      <tbody>
+        ${habits.map((h,hi)=>`
+          <tr>
+            <td>${h}</td>
+            ${Array.from({length:21},(_,di)=>`
+              <td class="wb-day-cell" data-defi2-h="${hi}" data-defi2-d="${di}">
+                <div class="wb-day-dot ${WB_DATA.defi21[hi][di]?'on':''}"></div>
+              </td>
+            `).join('')}
+          </tr>
+        `).join('')}
+      </tbody>
+    </table></div>`;
+  updateDefi21Count();
+  container.querySelector('.wb-challenge').addEventListener('click', (e)=>{
+    const cell = e.target.closest('.wb-day-cell');
+    if(!cell) return;
+    const h = parseInt(cell.dataset.defi2H), d = parseInt(cell.dataset.defi2D);
+    WB_DATA.defi21[h][d] = !WB_DATA.defi21[h][d];
+    cell.querySelector('.wb-day-dot').classList.toggle('on', WB_DATA.defi21[h][d]);
+    updateDefi21Count();
+    saveWbData();
+    updateWbToc();
+  });
+}
+function updateDefi21Count(){
+  let done=0;
+  WB_DATA.defi21.forEach(row=>row.forEach(v=>{ if(v) done++; }));
+  const el = document.getElementById('wbDefi21Count');
+  if(el) el.textContent = done + ' / 126 cases cochées';
+}
+
+const NIV2_SECTIONS = [
+  {id:'diag2', title:'Mon diagnostic de stabilité', render: renderNiv2Diag},
+  {id:'fonds', title:'Exercice — Mon fonds de sécurité', render: renderNiv2Fonds},
+  {id:'habitudesList', title:'Check-list — Stabiliser mes habitudes', render: renderNiv2Habitudes},
+  {id:'environnementList', title:'Check-list — Nettoyer mon environnement', render: renderNiv2Environnement},
+  {id:'disciplineList', title:'Check-list — Mes systèmes de discipline', render: renderNiv2Discipline},
+  {id:'investir', title:'Exercice — Premiers pas vers l\u2019investissement', render: renderNiv2Investir},
+  {id:'equilibre', title:'Mon équilibre mensuel', render: renderNiv2Equilibre},
+  {id:'defi21', title:'Défi 21 jours', render: renderNiv2Defi21},
+];
+function niv2SectionHasData(id){
+  switch(id){
+    case 'diag2': return Object.values(WB_DATA.diag).some(arr=>arr.some(Boolean));
+    case 'fonds': return !!(WB_DATA.fonds.depensesMensuelles || WB_DATA.fonds.moisVises || WB_DATA.fonds.dejaEpargne || WB_DATA.fonds.epargneMensuelle);
+    case 'habitudesList': return WB_DATA.habitudesList.some(Boolean);
+    case 'environnementList': return WB_DATA.environnementList.some(Boolean);
+    case 'disciplineList': return WB_DATA.disciplineList.some(Boolean);
+    case 'investir': return WB_DATA.investir.checklist.some(Boolean) || !!(WB_DATA.investir.premierSupport && WB_DATA.investir.premierSupport.trim()) || !!WB_DATA.investir.montantDepart;
+    case 'equilibre': return Object.values(WB_DATA.equilibre).some(arr=>arr.some(v=>v && String(v).trim()));
+    case 'defi21': return WB_DATA.defi21.some(row=>row.some(Boolean));
+  }
+  return false;
+}
+function openWorkbook2(){
+  openWorkbookGeneric({
+    levelNum: 2,
+    defaultShape: NIV2_DEFAULT,
+    storageKey: NIV2_KEY,
+    lastSectionKey: NIV2_LAST_SECTION_KEY,
+    sections: NIV2_SECTIONS,
+    hasDataFn: niv2SectionHasData,
+    eyebrow: 'Niveau 2 · Stabiliser ta Base'
+  });
+}
+
 
 
 
