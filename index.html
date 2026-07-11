@@ -1697,7 +1697,11 @@ function renderMyProducts(){
         const lvl = LEVELS.find(l=>l.n===parseInt(el.dataset.n));
         if(!lvl) return;
         if(lvl.n === 0){
-          openWorkbook();
+          openWorkbook0();
+          return;
+        }
+        if(lvl.n === 1){
+          openWorkbook1();
           return;
         }
         openContentModal({
@@ -2120,9 +2124,121 @@ function closeBookReader(){
 }
 bookReaderModal.addEventListener('click', e=>{ if(e.target===bookReaderModal) closeBookReader(); });
 
-/* ===== CARNET INTERACTIF "NIVEAU 0 — PASSEPORT DE LIBERTÉ" =====
-   10 exercices/checklists à remplir. Chaque case cochée et chaque texte saisi
-   est sauvegardé automatiquement dans le navigateur (localStorage). */
+/* ===== CARNETS INTERACTIFS (NIVEAU 0, NIVEAU 1, …) =====
+   Moteur générique : sommaire, navigation, sauvegarde automatique dans le navigateur.
+   Chaque niveau a ses propres exercices (contenu différent) mais partage la même
+   fenêtre et la même logique de sauvegarde/reprise. */
+let WB_DATA = null;
+let WB_KEY = null;
+let WB_LAST_SECTION_KEY = null;
+let WB_SECTIONS = null;
+let WB_HAS_DATA_FN = null;
+let WB_GENERATION = 0;
+let wbSaveTimer = null;
+
+function loadWbData(defaultShape, storageKey){
+  try{
+    const raw = localStorage.getItem(storageKey);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return JSON.parse(JSON.stringify(defaultShape));
+}
+function saveWbData(){
+  try{ localStorage.setItem(WB_KEY, JSON.stringify(WB_DATA)); }catch(e){}
+  const note = document.getElementById('wbSavedNote');
+  if(note){
+    note.classList.add('show');
+    clearTimeout(wbSaveTimer);
+    wbSaveTimer = setTimeout(()=>note.classList.remove('show'), 1400);
+  }
+}
+function escapeHtml(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escapeAttr(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function debounce(fn, ms){
+  const genAtBind = WB_GENERATION;
+  let t;
+  return function(...args){
+    clearTimeout(t);
+    t = setTimeout(()=>{
+      if(genAtBind !== WB_GENERATION) return; /* le carnet a changé depuis : on ignore cette sauvegarde périmée */
+      fn.apply(this,args);
+    }, ms);
+  };
+}
+
+function buildWbToc(){
+  const toc = document.getElementById('wbToc');
+  toc.innerHTML = WB_SECTIONS.map(s=>`<a href="#" data-id="${s.id}"><span class="wb-check">✓</span>${s.title}</a>`).join('');
+  toc.querySelectorAll('a').forEach(a=>{
+    a.addEventListener('click', e=>{ e.preventDefault(); renderWbSection(a.dataset.id); });
+  });
+  updateWbToc();
+}
+function updateWbToc(){
+  const toc = document.getElementById('wbToc');
+  if(!toc) return;
+  toc.querySelectorAll('a').forEach(a=>{
+    a.classList.toggle('done', WB_HAS_DATA_FN(a.dataset.id));
+  });
+}
+function renderWbSection(id){
+  const idx = WB_SECTIONS.findIndex(s=>s.id===id);
+  if(idx===-1) return;
+  const sec = WB_SECTIONS[idx];
+  document.getElementById('wbSectionTitle').textContent = sec.title;
+  document.getElementById('wbProgress').textContent = (idx+1) + ' / ' + WB_SECTIONS.length;
+  const content = document.getElementById('wbContent');
+  sec.render(content);
+  content.scrollTop = 0;
+  document.getElementById('wbToc').querySelectorAll('a').forEach(a=>a.classList.toggle('active', a.dataset.id===id));
+  updateWbToc();
+  const activeLink = document.querySelector('#wbToc a.active');
+  if(activeLink) activeLink.scrollIntoView({block:'nearest'});
+
+  const prevBtn = document.getElementById('wbPrevBtn');
+  const nextBtn = document.getElementById('wbNextBtn');
+  prevBtn.disabled = idx===0;
+  nextBtn.textContent = idx===WB_SECTIONS.length-1 ? 'Terminé ✓' : 'Suivant →';
+  nextBtn.disabled = idx===WB_SECTIONS.length-1;
+  prevBtn.onclick = ()=> renderWbSection(WB_SECTIONS[idx-1].id);
+  nextBtn.onclick = ()=> renderWbSection(WB_SECTIONS[idx+1].id);
+
+  try{ localStorage.setItem(WB_LAST_SECTION_KEY, id); }catch(e){}
+}
+
+const wbModal = document.getElementById('wbModal');
+function openWorkbookGeneric(cfg){
+  if(!MEMBER_DATA.ownedLevels.includes(cfg.levelNum)){
+    showToast('<b>Niveau verrouillé</b><br><span style="color:var(--muted);font-size:.8em;">Avant d\'accéder au contenu, vous devez avoir acquis le Niveau ' + cfg.levelNum + '.</span>');
+    document.getElementById('niveaux').scrollIntoView({behavior:'smooth'});
+    return;
+  }
+  WB_DATA = loadWbData(cfg.defaultShape, cfg.storageKey);
+  WB_KEY = cfg.storageKey;
+  WB_LAST_SECTION_KEY = cfg.lastSectionKey;
+  WB_SECTIONS = cfg.sections;
+  WB_HAS_DATA_FN = cfg.hasDataFn;
+  WB_GENERATION++;
+  document.getElementById('wbEyebrow').textContent = cfg.eyebrow;
+  buildWbToc();
+  let lastId = cfg.sections[0].id;
+  try{ const saved = localStorage.getItem(cfg.lastSectionKey); if(saved && cfg.sections.find(s=>s.id===saved)) lastId = saved; }catch(e){}
+  renderWbSection(lastId);
+  wbModal.classList.add('open');
+  document.body.classList.add('reader-active');
+  document.body.style.overflow='hidden';
+}
+function closeWorkbook(){
+  wbModal.classList.remove('open');
+  document.body.classList.remove('reader-active');
+  document.body.style.overflow='';
+}
+wbModal.addEventListener('click', e=>{ if(e.target===wbModal) closeWorkbook(); });
+
+
+/* ========================================================================
+   NIVEAU 0 — "PASSEPORT DE LIBERTÉ" (10 exercices)
+   ======================================================================== */
 const NIV0_KEY = 'systemeInvisible_niveau0';
 const NIV0_LAST_SECTION_KEY = 'systemeInvisible_niveau0_lastSection';
 const NIV0_DEFAULT = {
@@ -2145,27 +2261,6 @@ const NIV0_DEFAULT = {
   },
   defi90: Array.from({length:10},()=>Array(90).fill(false))
 };
-function loadNiv0Data(){
-  try{
-    const raw = localStorage.getItem(NIV0_KEY);
-    if(raw) return JSON.parse(raw);
-  }catch(e){}
-  return JSON.parse(JSON.stringify(NIV0_DEFAULT));
-}
-let NIV0_DATA = loadNiv0Data();
-let niv0SaveTimer = null;
-function saveNiv0Data(){
-  try{ localStorage.setItem(NIV0_KEY, JSON.stringify(NIV0_DATA)); }catch(e){}
-  const note = document.getElementById('wbSavedNote');
-  if(note){
-    note.classList.add('show');
-    clearTimeout(niv0SaveTimer);
-    niv0SaveTimer = setTimeout(()=>note.classList.remove('show'), 1400);
-  }
-}
-function escapeHtml(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function escapeAttr(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function debounce(fn, ms){ let t; return function(...args){ clearTimeout(t); t = setTimeout(()=>fn.apply(this,args), ms); }; }
 
 function renderNiv0Diag(container){
   const cats = [
@@ -2202,7 +2297,7 @@ function renderNiv0Diag(container){
       <div class="wb-block-title">${cat.label} <span class="wb-score" data-score-for="${cat.key}"></span></div>
       ${cat.items.map((label,i)=>`
         <label class="wb-check-row">
-          <input type="checkbox" data-diag-cat="${cat.key}" data-diag-idx="${i}" ${NIV0_DATA.diag[cat.key][i]?'checked':''}>
+          <input type="checkbox" data-diag-cat="${cat.key}" data-diag-idx="${i}" ${WB_DATA.diag[cat.key][i]?'checked':''}>
           <span class="wb-check-box">✓</span>
           <span class="wb-label">${label}</span>
         </label>
@@ -2214,9 +2309,9 @@ function renderNiv0Diag(container){
   updateDiagScores();
   container.querySelectorAll('input[data-diag-cat]').forEach(inp=>{
     inp.addEventListener('change', ()=>{
-      NIV0_DATA.diag[inp.dataset.diagCat][parseInt(inp.dataset.diagIdx)] = inp.checked;
+      WB_DATA.diag[inp.dataset.diagCat][parseInt(inp.dataset.diagIdx)] = inp.checked;
       updateDiagScores();
-      saveNiv0Data();
+      saveWbData();
       updateWbToc();
     });
   });
@@ -2225,7 +2320,7 @@ function updateDiagScores(){
   const cats = {argent:6, temps:4, mental:4, liberte:4};
   let total=0, max=0;
   Object.keys(cats).forEach(k=>{
-    const score = NIV0_DATA.diag[k].filter(Boolean).length;
+    const score = WB_DATA.diag[k].filter(Boolean).length;
     total += score; max += cats[k];
     const el = document.querySelector(`[data-score-for="${k}"]`);
     if(el) el.textContent = 'Score : ' + score + '/' + cats[k];
@@ -2247,22 +2342,23 @@ function renderNiv0Fuites(container){
     </div>
     <div class="wb-field" style="margin-top:18px;">
       <label>Combien pourrais-tu investir chaque mois ?</label>
-      <input type="text" class="wb-input" id="wbInvestCible" placeholder="ex : 150 €" value="${escapeAttr(NIV0_DATA.fuites.invest)}">
+      <input type="text" class="wb-input" id="wbInvestCible" placeholder="ex : 150 €" value="${escapeAttr(WB_DATA.fuites.invest)}">
     </div>`;
   renderFuitesRows();
   document.getElementById('wbFuitesAdd').addEventListener('click', ()=>{
-    NIV0_DATA.fuites.rows.push({date:'', dep:'', type:'besoin', montant:''});
-    renderFuitesRows(); saveNiv0Data(); updateWbToc();
+    WB_DATA.fuites.rows.push({date:'', dep:'', type:'besoin', montant:''});
+    renderFuitesRows(); saveWbData(); updateWbToc();
   });
-  document.getElementById('wbInvestCible').addEventListener('input', debounce(()=>{
-    NIV0_DATA.fuites.invest = document.getElementById('wbInvestCible').value;
-    saveNiv0Data(); updateWbToc();
+  const investInp = document.getElementById('wbInvestCible');
+  investInp.addEventListener('input', debounce(()=>{
+    WB_DATA.fuites.invest = investInp.value;
+    saveWbData(); updateWbToc();
   }, 400));
 }
 function renderFuitesRows(){
   const body = document.getElementById('wbFuitesBody');
   if(!body) return;
-  body.innerHTML = NIV0_DATA.fuites.rows.map((r,i)=>`
+  body.innerHTML = WB_DATA.fuites.rows.map((r,i)=>`
     <tr data-i="${i}">
       <td><input type="text" data-f="date" value="${escapeAttr(r.date)}" placeholder="jj/mm"></td>
       <td><input type="text" data-f="dep" value="${escapeAttr(r.dep)}" placeholder="Dépense"></td>
@@ -2280,23 +2376,23 @@ function renderFuitesRows(){
   body.querySelectorAll('input,select').forEach(inp=>{
     const handler = ()=>{
       const tr = inp.closest('tr'); const i = parseInt(tr.dataset.i);
-      NIV0_DATA.fuites.rows[i][inp.dataset.f] = inp.value;
-      updateFuitesTotals(); saveNiv0Data(); updateWbToc();
+      WB_DATA.fuites.rows[i][inp.dataset.f] = inp.value;
+      updateFuitesTotals(); saveWbData(); updateWbToc();
     };
     inp.addEventListener('input', handler);
     inp.addEventListener('change', handler);
   });
   body.querySelectorAll('[data-del]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
-      NIV0_DATA.fuites.rows.splice(parseInt(btn.dataset.del),1);
-      renderFuitesRows(); saveNiv0Data(); updateWbToc();
+      WB_DATA.fuites.rows.splice(parseInt(btn.dataset.del),1);
+      renderFuitesRows(); saveWbData(); updateWbToc();
     });
   });
   updateFuitesTotals();
 }
 function updateFuitesTotals(){
   let envies=0, besoins=0;
-  NIV0_DATA.fuites.rows.forEach(r=>{
+  WB_DATA.fuites.rows.forEach(r=>{
     const m = parseFloat(r.montant) || 0;
     if(r.type==='envie') envies += m; else besoins += m;
   });
@@ -2309,7 +2405,7 @@ function renderNiv0Menage(container){
   container.innerHTML = `<p class="wb-intro">Pendant une heure, supprime :</p><div class="wb-block">
   ${items.map((label,i)=>`
     <label class="wb-check-row">
-      <input type="checkbox" data-menage-idx="${i}" ${NIV0_DATA.menage[i]?'checked':''}>
+      <input type="checkbox" data-menage-idx="${i}" ${WB_DATA.menage[i]?'checked':''}>
       <span class="wb-check-box">✓</span>
       <span class="wb-label">${label}</span>
     </label>
@@ -2317,8 +2413,8 @@ function renderNiv0Menage(container){
   </div>`;
   container.querySelectorAll('input[data-menage-idx]').forEach(inp=>{
     inp.addEventListener('change', ()=>{
-      NIV0_DATA.menage[parseInt(inp.dataset.menageIdx)] = inp.checked;
-      saveNiv0Data(); updateWbToc();
+      WB_DATA.menage[parseInt(inp.dataset.menageIdx)] = inp.checked;
+      saveWbData(); updateWbToc();
     });
   });
 }
@@ -2334,18 +2430,18 @@ function renderNiv0Competences(container){
   ${fields.map(f=>`
     <div class="wb-field">
       <label>${f.label}</label>
-      <textarea class="wb-textarea" data-comp="${f.key}">${escapeHtml(NIV0_DATA.competences[f.key])}</textarea>
+      <textarea class="wb-textarea" data-comp="${f.key}">${escapeHtml(WB_DATA.competences[f.key])}</textarea>
     </div>
   `).join('')}
   </div>
   <div class="wb-field" style="margin-top:6px;">
     <label>Quelles compétences pourraient produire un revenu ?</label>
-    <textarea class="wb-textarea" data-comp="revenu">${escapeHtml(NIV0_DATA.competences.revenu)}</textarea>
+    <textarea class="wb-textarea" data-comp="revenu">${escapeHtml(WB_DATA.competences.revenu)}</textarea>
   </div>`;
   container.querySelectorAll('textarea[data-comp]').forEach(ta=>{
     ta.addEventListener('input', debounce(()=>{
-      NIV0_DATA.competences[ta.dataset.comp] = ta.value;
-      saveNiv0Data(); updateWbToc();
+      WB_DATA.competences[ta.dataset.comp] = ta.value;
+      saveWbData(); updateWbToc();
     }, 500));
   });
 }
@@ -2355,7 +2451,7 @@ function renderNiv0Actifs(container){
   container.innerHTML = `<p class="wb-intro">Coche ceux qui pourraient exister dans les 12 prochains mois.</p><div class="wb-block">
   ${items.map((label,i)=>`
     <label class="wb-check-row">
-      <input type="checkbox" data-actifs-idx="${i}" ${NIV0_DATA.actifs[i]?'checked':''}>
+      <input type="checkbox" data-actifs-idx="${i}" ${WB_DATA.actifs[i]?'checked':''}>
       <span class="wb-check-box">✓</span>
       <span class="wb-label">${label}</span>
     </label>
@@ -2363,8 +2459,8 @@ function renderNiv0Actifs(container){
   </div>`;
   container.querySelectorAll('input[data-actifs-idx]').forEach(inp=>{
     inp.addEventListener('change', ()=>{
-      NIV0_DATA.actifs[parseInt(inp.dataset.actifsIdx)] = inp.checked;
-      saveNiv0Data(); updateWbToc();
+      WB_DATA.actifs[parseInt(inp.dataset.actifsIdx)] = inp.checked;
+      saveWbData(); updateWbToc();
     });
   });
 }
@@ -2373,20 +2469,20 @@ function renderNiv0Idees(container){
   container.innerHTML = `<p class="wb-intro">Écris 100 idées. Même mauvaises. Même impossibles. Même ridicules. Les 10 dernières sont souvent les meilleures.</p>
     <div class="wb-ideas-count" id="wbIdeesCount"></div>
     <div class="wb-ideas-grid">
-      ${NIV0_DATA.idees.map((v,i)=>`
+      ${WB_DATA.idees.map((v,i)=>`
         <div class="wb-idea-row"><span>${i+1}.</span><input type="text" data-idee="${i}" value="${escapeAttr(v)}"></div>
       `).join('')}
     </div>`;
   updateIdeesCount();
   container.querySelectorAll('input[data-idee]').forEach(inp=>{
     inp.addEventListener('input', debounce(()=>{
-      NIV0_DATA.idees[parseInt(inp.dataset.idee)] = inp.value;
-      updateIdeesCount(); saveNiv0Data(); updateWbToc();
+      WB_DATA.idees[parseInt(inp.dataset.idee)] = inp.value;
+      updateIdeesCount(); saveWbData(); updateWbToc();
     }, 400));
   });
 }
 function updateIdeesCount(){
-  const n = NIV0_DATA.idees.filter(v=>v && v.trim()).length;
+  const n = WB_DATA.idees.filter(v=>v && v.trim()).length;
   const el = document.getElementById('wbIdeesCount');
   if(el) el.textContent = n + ' / 100 idées écrites';
 }
@@ -2396,7 +2492,7 @@ function renderNiv0Journee(container){
   container.innerHTML = `<p class="wb-intro">Aujourd'hui je me couche en ayant :</p><div class="wb-block">
   ${items.map((label,i)=>`
     <label class="wb-check-row">
-      <input type="checkbox" data-journee-idx="${i}" ${NIV0_DATA.journee[i]?'checked':''}>
+      <input type="checkbox" data-journee-idx="${i}" ${WB_DATA.journee[i]?'checked':''}>
       <span class="wb-check-box">✓</span>
       <span class="wb-label">${label}</span>
     </label>
@@ -2404,25 +2500,27 @@ function renderNiv0Journee(container){
   </div><p style="margin-top:16px;color:var(--muted);font-size:.85rem;">Si tu coches ces six cases chaque jour... ta vie changera.</p>`;
   container.querySelectorAll('input[data-journee-idx]').forEach(inp=>{
     inp.addEventListener('change', ()=>{
-      NIV0_DATA.journee[parseInt(inp.dataset.journeeIdx)] = inp.checked;
-      saveNiv0Data(); updateWbToc();
+      WB_DATA.journee[parseInt(inp.dataset.journeeIdx)] = inp.checked;
+      saveWbData(); updateWbToc();
     });
   });
 }
 
 function renderNiv0Lettre(container){
   container.innerHTML = `<p class="wb-intro">Écris une lettre à ton futur toi. "Merci d'avoir commencé."</p>
-    <div class="wb-field"><label>Date</label><input type="text" class="wb-date" id="wbLettreDate" placeholder="ex : 16 août 2036" value="${escapeAttr(NIV0_DATA.lettre.date)}"></div>
+    <div class="wb-field"><label>Date</label><input type="text" class="wb-date" id="wbLettreDate" placeholder="ex : 16 août 2036" value="${escapeAttr(WB_DATA.lettre.date)}"></div>
     <div class="wb-field"><label>Ta lettre</label>
-      <textarea class="wb-textarea" id="wbLettreTexte" style="min-height:220px;" placeholder="Décris : où tu vis, combien tu possèdes, combien travaillent tes actifs, combien de temps tu passes avec tes proches, ce dont tu es le plus fier…">${escapeHtml(NIV0_DATA.lettre.texte)}</textarea>
+      <textarea class="wb-textarea" id="wbLettreTexte" style="min-height:220px;" placeholder="Décris : où tu vis, combien tu possèdes, combien travaillent tes actifs, combien de temps tu passes avec tes proches, ce dont tu es le plus fier…">${escapeHtml(WB_DATA.lettre.texte)}</textarea>
     </div>`;
-  document.getElementById('wbLettreDate').addEventListener('input', debounce(()=>{
-    NIV0_DATA.lettre.date = document.getElementById('wbLettreDate').value;
-    saveNiv0Data(); updateWbToc();
+  const dateInp = document.getElementById('wbLettreDate');
+  dateInp.addEventListener('input', debounce(()=>{
+    WB_DATA.lettre.date = dateInp.value;
+    saveWbData(); updateWbToc();
   }, 400));
-  document.getElementById('wbLettreTexte').addEventListener('input', debounce(()=>{
-    NIV0_DATA.lettre.texte = document.getElementById('wbLettreTexte').value;
-    saveNiv0Data(); updateWbToc();
+  const texteInp = document.getElementById('wbLettreTexte');
+  texteInp.addEventListener('input', debounce(()=>{
+    WB_DATA.lettre.texte = texteInp.value;
+    saveWbData(); updateWbToc();
   }, 400));
 }
 
@@ -2444,15 +2542,15 @@ function renderNiv0Dashboard(container){
         ${rows.map(r=>`
           <tr>
             <td>${r.label}</td>
-            ${months.map((m,mi)=>`<td><input type="text" data-dash-row="${r.key}" data-dash-m="${mi}" value="${escapeAttr(NIV0_DATA.dashboard[r.key][mi])}"></td>`).join('')}
+            ${months.map((m,mi)=>`<td><input type="text" data-dash-row="${r.key}" data-dash-m="${mi}" value="${escapeAttr(WB_DATA.dashboard[r.key][mi])}"></td>`).join('')}
           </tr>
         `).join('')}
       </tbody>
     </table></div>`;
   container.querySelectorAll('input[data-dash-row]').forEach(inp=>{
     inp.addEventListener('input', debounce(()=>{
-      NIV0_DATA.dashboard[inp.dataset.dashRow][parseInt(inp.dataset.dashM)] = inp.value;
-      saveNiv0Data(); updateWbToc();
+      WB_DATA.dashboard[inp.dataset.dashRow][parseInt(inp.dataset.dashM)] = inp.value;
+      saveWbData(); updateWbToc();
     }, 400));
   });
 }
@@ -2469,7 +2567,7 @@ function renderNiv0Defi90(container){
             <td>${h}</td>
             ${Array.from({length:90},(_,di)=>`
               <td class="wb-day-cell" data-defi-h="${hi}" data-defi-d="${di}">
-                <div class="wb-day-dot ${NIV0_DATA.defi90[hi][di]?'on':''}"></div>
+                <div class="wb-day-dot ${WB_DATA.defi90[hi][di]?'on':''}"></div>
               </td>
             `).join('')}
           </tr>
@@ -2481,16 +2579,16 @@ function renderNiv0Defi90(container){
     const cell = e.target.closest('.wb-day-cell');
     if(!cell) return;
     const h = parseInt(cell.dataset.defiH), d = parseInt(cell.dataset.defiD);
-    NIV0_DATA.defi90[h][d] = !NIV0_DATA.defi90[h][d];
-    cell.querySelector('.wb-day-dot').classList.toggle('on', NIV0_DATA.defi90[h][d]);
+    WB_DATA.defi90[h][d] = !WB_DATA.defi90[h][d];
+    cell.querySelector('.wb-day-dot').classList.toggle('on', WB_DATA.defi90[h][d]);
     updateDefiCount();
-    saveNiv0Data();
+    saveWbData();
     updateWbToc();
   });
 }
 function updateDefiCount(){
   let done=0;
-  NIV0_DATA.defi90.forEach(row=>row.forEach(v=>{ if(v) done++; }));
+  WB_DATA.defi90.forEach(row=>row.forEach(v=>{ if(v) done++; }));
   const el = document.getElementById('wbDefiCount');
   if(el) el.textContent = done + ' / 900 cases cochées';
 }
@@ -2507,84 +2605,472 @@ const NIV0_SECTIONS = [
   {id:'dashboard', title:'Mon tableau de bord mensuel', render: renderNiv0Dashboard},
   {id:'defi90', title:'Défi 90 jours', render: renderNiv0Defi90},
 ];
-
-function sectionHasData(id){
+function niv0SectionHasData(id){
   switch(id){
-    case 'diag': return Object.values(NIV0_DATA.diag).some(arr=>arr.some(Boolean));
-    case 'fuites': return NIV0_DATA.fuites.rows.length>0 || !!NIV0_DATA.fuites.invest;
-    case 'menage': return NIV0_DATA.menage.some(Boolean);
-    case 'competences': return Object.values(NIV0_DATA.competences).some(v=>v && v.trim());
-    case 'actifs': return NIV0_DATA.actifs.some(Boolean);
-    case 'idees': return NIV0_DATA.idees.some(v=>v && v.trim());
-    case 'journee': return NIV0_DATA.journee.some(Boolean);
-    case 'lettre': return !!(NIV0_DATA.lettre.texte && NIV0_DATA.lettre.texte.trim());
-    case 'dashboard': return Object.values(NIV0_DATA.dashboard).some(arr=>arr.some(v=>v && String(v).trim()));
-    case 'defi90': return NIV0_DATA.defi90.some(row=>row.some(Boolean));
+    case 'diag': return Object.values(WB_DATA.diag).some(arr=>arr.some(Boolean));
+    case 'fuites': return WB_DATA.fuites.rows.length>0 || !!WB_DATA.fuites.invest;
+    case 'menage': return WB_DATA.menage.some(Boolean);
+    case 'competences': return Object.values(WB_DATA.competences).some(v=>v && v.trim());
+    case 'actifs': return WB_DATA.actifs.some(Boolean);
+    case 'idees': return WB_DATA.idees.some(v=>v && v.trim());
+    case 'journee': return WB_DATA.journee.some(Boolean);
+    case 'lettre': return !!(WB_DATA.lettre.texte && WB_DATA.lettre.texte.trim());
+    case 'dashboard': return Object.values(WB_DATA.dashboard).some(arr=>arr.some(v=>v && String(v).trim()));
+    case 'defi90': return WB_DATA.defi90.some(row=>row.some(Boolean));
   }
   return false;
 }
-function buildWbToc(){
-  const toc = document.getElementById('wbToc');
-  toc.innerHTML = NIV0_SECTIONS.map(s=>`<a href="#" data-id="${s.id}"><span class="wb-check">✓</span>${s.title}</a>`).join('');
-  toc.querySelectorAll('a').forEach(a=>{
-    a.addEventListener('click', e=>{ e.preventDefault(); renderWbSection(a.dataset.id); });
-  });
-  updateWbToc();
-}
-function updateWbToc(){
-  const toc = document.getElementById('wbToc');
-  if(!toc) return;
-  toc.querySelectorAll('a').forEach(a=>{
-    a.classList.toggle('done', sectionHasData(a.dataset.id));
+function openWorkbook0(){
+  openWorkbookGeneric({
+    levelNum: 0,
+    defaultShape: NIV0_DEFAULT,
+    storageKey: NIV0_KEY,
+    lastSectionKey: NIV0_LAST_SECTION_KEY,
+    sections: NIV0_SECTIONS,
+    hasDataFn: niv0SectionHasData,
+    eyebrow: 'Niveau 0 · Passeport de Liberté'
   });
 }
+/* Alias conservé pour compatibilité (appelé par les cartes déjà en place) */
+function openWorkbook(){ openWorkbook0(); }
 
-function renderWbSection(id){
-  const idx = NIV0_SECTIONS.findIndex(s=>s.id===id);
-  if(idx===-1) return;
-  const sec = NIV0_SECTIONS[idx];
-  document.getElementById('wbSectionTitle').textContent = sec.title;
-  document.getElementById('wbProgress').textContent = (idx+1) + ' / ' + NIV0_SECTIONS.length;
-  const content = document.getElementById('wbContent');
-  sec.render(content);
-  content.scrollTop = 0;
-  document.getElementById('wbToc').querySelectorAll('a').forEach(a=>a.classList.toggle('active', a.dataset.id===id));
-  updateWbToc();
-  const activeLink = document.querySelector('#wbToc a.active');
-  if(activeLink) activeLink.scrollIntoView({block:'nearest'});
 
-  const prevBtn = document.getElementById('wbPrevBtn');
-  const nextBtn = document.getElementById('wbNextBtn');
-  prevBtn.disabled = idx===0;
-  nextBtn.textContent = idx===NIV0_SECTIONS.length-1 ? 'Terminé ✓' : 'Suivant →';
-  nextBtn.disabled = idx===NIV0_SECTIONS.length-1;
-  prevBtn.onclick = ()=> renderWbSection(NIV0_SECTIONS[idx-1].id);
-  nextBtn.onclick = ()=> renderWbSection(NIV0_SECTIONS[idx+1].id);
+/* ========================================================================
+   NIVEAU 1 — "REPRENDRE LE CONTRÔLE" (10 exercices)
+   Généré dans la même logique que le Niveau 0 : diagnostic, exercices
+   concrets, check-lists, tableau de suivi, défi quotidien, engagement final.
+   Basé sur l'objectif du Niveau 1 : clarifier revenus/dépenses, créer une
+   marge réelle, structurer son argent, poser un premier plan sur 30 jours.
+   ======================================================================== */
+const NIV1_KEY = 'systemeInvisible_niveau1';
+const NIV1_LAST_SECTION_KEY = 'systemeInvisible_niveau1_lastSection';
+const NIV1_DEFAULT = {
+  diag: {
+    clarte: [false,false,false,false],
+    structure: [false,false,false,false],
+    discipline: [false,false,false,false],
+    marge: [false,false,false,false]
+  },
+  budget: { revenus: [], depenses: [] },
+  margeActions: Array(10).fill(false),
+  repartition: { besoins:'', envies:'', epargne:'', notes:'' },
+  plan30: [
+    {label:'Diagnostic complet de ma situation', done:false, note:''},
+    {label:'Plan de stabilisation posé', done:false, note:''},
+    {label:'Piste de revenu supplémentaire identifiée', done:false, note:''},
+    {label:'Structure simple de mes flux mise en place', done:false, note:''},
+    {label:'Premiers pas vers un actif engagés', done:false, note:''}
+  ],
+  revenu: { competence:'', offre:'', premierClient:'', actionSemaine:'' },
+  actifsPremiers: Array(10).fill(false),
+  suivi: {
+    revenus:Array(12).fill(''), depenses:Array(12).fill(''), marge:Array(12).fill(''), pourcentMarge:Array(12).fill('')
+  },
+  defi30: Array.from({length:8},()=>Array(30).fill(false)),
+  engagement: { date:'', texte:'' }
+};
 
-  try{ localStorage.setItem(NIV0_LAST_SECTION_KEY, id); }catch(e){}
+function renderNiv1Diag(container){
+  const cats = [
+    {key:'clarte', label:'Clarté', items:[
+      "Je connais le montant exact de mes revenus mensuels.",
+      "Je connais le montant exact de mes dépenses mensuelles.",
+      "Je sais précisément où part chaque euro.",
+      "Je pourrais annoncer mon solde bancaire à l'euro près."
+    ]},
+    {key:'structure', label:'Structure', items:[
+      "Mon argent est réparti sur des comptes/enveloppes dédiés.",
+      "Mes dépenses fixes sont automatisées et sous contrôle.",
+      "J'ai un montant d'épargne qui part automatiquement chaque mois.",
+      "Je sais exactement ce qui est \"besoin\" et ce qui est \"envie\" dans mon budget."
+    ]},
+    {key:'discipline', label:'Discipline', items:[
+      "Je tiens un suivi régulier de mes finances (même simple).",
+      "Je ne dépense pas sous le coup de l'impulsion.",
+      "Je respecte le plan que je me fixe, même quand c'est inconfortable.",
+      "Je tiens mes engagements envers moi-même sur 30 jours."
+    ]},
+    {key:'marge', label:'Marge', items:[
+      "Il me reste de l'argent à la fin du mois.",
+      "Cette marge est utilisée pour construire, pas juste consommée.",
+      "J'ai identifié au moins une source de revenu supplémentaire possible.",
+      "Je considère mon argent comme un outil, pas juste une ressource qui s'épuise."
+    ]}
+  ];
+  let html = `<p class="wb-intro">Reprendre le contrôle commence par voir clairement où tu en es. Coche ce qui est déjà vrai pour toi.</p>`;
+  cats.forEach(cat=>{
+    html += `<div class="wb-block" data-cat="${cat.key}">
+      <div class="wb-block-title">${cat.label} <span class="wb-score" data-score-for="${cat.key}"></span></div>
+      ${cat.items.map((label,i)=>`
+        <label class="wb-check-row">
+          <input type="checkbox" data-diag1-cat="${cat.key}" data-diag1-idx="${i}" ${WB_DATA.diag[cat.key][i]?'checked':''}>
+          <span class="wb-check-box">✓</span>
+          <span class="wb-label">${label}</span>
+        </label>
+      `).join('')}
+    </div>`;
+  });
+  html += `<div class="wb-block"><div class="wb-block-title">Indice de contrôle <span class="wb-score" id="wbDiag1Global"></span></div></div>`;
+  container.innerHTML = html;
+  updateDiag1Scores();
+  container.querySelectorAll('input[data-diag1-cat]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.diag[inp.dataset.diag1Cat][parseInt(inp.dataset.diag1Idx)] = inp.checked;
+      updateDiag1Scores();
+      saveWbData();
+      updateWbToc();
+    });
+  });
+}
+function updateDiag1Scores(){
+  const cats = {clarte:4, structure:4, discipline:4, marge:4};
+  let total=0, max=0;
+  Object.keys(cats).forEach(k=>{
+    const score = WB_DATA.diag[k].filter(Boolean).length;
+    total += score; max += cats[k];
+    const el = document.querySelector(`[data-score-for="${k}"]`);
+    if(el) el.textContent = 'Score : ' + score + '/' + cats[k];
+  });
+  const g = document.getElementById('wbDiag1Global');
+  if(g) g.textContent = total + '/' + max;
 }
 
-const wbModal = document.getElementById('wbModal');
-function openWorkbook(){
-  if(!MEMBER_DATA.ownedLevels.includes(0)){
-    showToast('<b>Niveau verrouillé</b><br><span style="color:var(--muted);font-size:.8em;">Avant d\'accéder au contenu, vous devez avoir acquis le Niveau 0.</span>');
-    document.getElementById('niveaux').scrollIntoView({behavior:'smooth'});
-    return;
+function renderNiv1Budget(container){
+  container.innerHTML = `<p class="wb-intro">Liste toutes tes sources de revenus, puis toutes tes dépenses fixes. La clarté d'abord, le contrôle ensuite.</p>
+    <div class="wb-block-title">Mes revenus</div>
+    <div class="wb-table-wrap"><table class="wb-exp-table">
+      <thead><tr><th>Source</th><th>Montant (€/mois)</th><th></th></tr></thead>
+      <tbody id="wbBudgetRevBody"></tbody>
+    </table></div>
+    <button class="wb-btn" id="wbBudgetRevAdd" type="button">+ Ajouter un revenu</button>
+
+    <div class="wb-block-title" style="margin-top:26px;">Mes dépenses fixes</div>
+    <div class="wb-table-wrap"><table class="wb-exp-table">
+      <thead><tr><th>Dépense</th><th>Montant (€/mois)</th><th></th></tr></thead>
+      <tbody id="wbBudgetDepBody"></tbody>
+    </table></div>
+    <button class="wb-btn" id="wbBudgetDepAdd" type="button">+ Ajouter une dépense</button>
+
+    <div class="wb-totals">
+      <div class="wb-total-item">Total revenus<b id="wbBudgetTotalRev">0 €</b></div>
+      <div class="wb-total-item">Total dépenses<b id="wbBudgetTotalDep">0 €</b></div>
+      <div class="wb-total-item">Marge mensuelle<b id="wbBudgetMarge">0 €</b></div>
+    </div>`;
+  renderBudgetRows('revenus'); renderBudgetRows('depenses');
+  document.getElementById('wbBudgetRevAdd').addEventListener('click', ()=>{
+    WB_DATA.budget.revenus.push({label:'', montant:''});
+    renderBudgetRows('revenus'); saveWbData(); updateWbToc();
+  });
+  document.getElementById('wbBudgetDepAdd').addEventListener('click', ()=>{
+    WB_DATA.budget.depenses.push({label:'', montant:''});
+    renderBudgetRows('depenses'); saveWbData(); updateWbToc();
+  });
+}
+function renderBudgetRows(kind){
+  const body = document.getElementById(kind==='revenus' ? 'wbBudgetRevBody' : 'wbBudgetDepBody');
+  if(!body) return;
+  const list = WB_DATA.budget[kind];
+  body.innerHTML = list.map((r,i)=>`
+    <tr data-i="${i}">
+      <td><input type="text" data-f="label" value="${escapeAttr(r.label)}" placeholder="${kind==='revenus'?'ex : Salaire':'ex : Loyer'}"></td>
+      <td><input type="number" data-f="montant" value="${escapeAttr(r.montant)}" placeholder="0"></td>
+      <td><button class="wb-row-del" data-del="${i}" type="button">✕</button></td>
+    </tr>
+  `).join('') || `<tr><td colspan="3" style="color:var(--muted);text-align:center;padding:14px;">Aucune ligne pour l'instant.</td></tr>`;
+  body.querySelectorAll('input').forEach(inp=>{
+    const handler = ()=>{
+      const tr = inp.closest('tr'); const i = parseInt(tr.dataset.i);
+      WB_DATA.budget[kind][i][inp.dataset.f] = inp.value;
+      updateBudgetTotals(); saveWbData(); updateWbToc();
+    };
+    inp.addEventListener('input', handler);
+  });
+  body.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      WB_DATA.budget[kind].splice(parseInt(btn.dataset.del),1);
+      renderBudgetRows(kind); saveWbData(); updateWbToc();
+    });
+  });
+  updateBudgetTotals();
+}
+function updateBudgetTotals(){
+  const sum = arr => arr.reduce((s,r)=> s + (parseFloat(r.montant)||0), 0);
+  const totalRev = sum(WB_DATA.budget.revenus);
+  const totalDep = sum(WB_DATA.budget.depenses);
+  const rEl = document.getElementById('wbBudgetTotalRev'); if(rEl) rEl.textContent = totalRev.toFixed(2) + ' €';
+  const dEl = document.getElementById('wbBudgetTotalDep'); if(dEl) dEl.textContent = totalDep.toFixed(2) + ' €';
+  const mEl = document.getElementById('wbBudgetMarge'); if(mEl) mEl.textContent = (totalRev-totalDep).toFixed(2) + ' €';
+}
+
+function renderNiv1Marge(container){
+  const items = [
+    "Renégocier ou résilier un abonnement inutile",
+    "Renégocier une assurance ou un crédit",
+    "Supprimer un achat récurrent non essentiel",
+    "Automatiser un virement d'épargne dès réception du salaire",
+    "Fixer une limite hebdomadaire de dépenses \"envie\"",
+    "Vendre un objet inutilisé",
+    "Comparer et changer de fournisseur (énergie, téléphonie…)",
+    "Cuisiner davantage plutôt que commander",
+    "Attendre 48h avant tout achat non planifié",
+    "Fixer un jour \"sans dépense\" chaque semaine"
+  ];
+  container.innerHTML = `<p class="wb-intro">Coche les actions que tu t'engages à mettre en place pour créer une marge réelle.</p><div class="wb-block">
+  ${items.map((label,i)=>`
+    <label class="wb-check-row">
+      <input type="checkbox" data-marge-idx="${i}" ${WB_DATA.margeActions[i]?'checked':''}>
+      <span class="wb-check-box">✓</span>
+      <span class="wb-label">${label}</span>
+    </label>
+  `).join('')}
+  </div>`;
+  container.querySelectorAll('input[data-marge-idx]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.margeActions[parseInt(inp.dataset.margeIdx)] = inp.checked;
+      saveWbData(); updateWbToc();
+    });
+  });
+}
+
+function renderNiv1Structure(container){
+  container.innerHTML = `<p class="wb-intro">Structure ton argent avec la méthode des 3 comptes : Besoins / Envies / Épargne-Investissement. Répartis 100% de tes revenus.</p>
+    <div class="wb-grid-2">
+      <div class="wb-field"><label>% Besoins (loyer, factures, nourriture…)</label>
+        <input type="number" class="wb-input" id="wbRepBesoins" value="${escapeAttr(WB_DATA.repartition.besoins)}" placeholder="ex : 50"></div>
+      <div class="wb-field"><label>% Envies (loisirs, plaisirs…)</label>
+        <input type="number" class="wb-input" id="wbRepEnvies" value="${escapeAttr(WB_DATA.repartition.envies)}" placeholder="ex : 30"></div>
+      <div class="wb-field"><label>% Épargne / Investissement</label>
+        <input type="number" class="wb-input" id="wbRepEpargne" value="${escapeAttr(WB_DATA.repartition.epargne)}" placeholder="ex : 20"></div>
+      <div class="wb-field"><label>Total</label>
+        <div class="wb-input" id="wbRepTotal" style="background:transparent;"></div></div>
+    </div>
+    <div class="wb-field" style="margin-top:6px;">
+      <label>Comment vas-tu concrètement séparer cet argent ? (comptes, enveloppes, virements automatiques…)</label>
+      <textarea class="wb-textarea" id="wbRepNotes">${escapeHtml(WB_DATA.repartition.notes)}</textarea>
+    </div>`;
+  updateRepTotal();
+  const besoinsInp = document.getElementById('wbRepBesoins');
+  const enviesInp = document.getElementById('wbRepEnvies');
+  const epargneInp = document.getElementById('wbRepEpargne');
+  [besoinsInp, enviesInp, epargneInp].forEach(inp=>{
+    inp.addEventListener('input', debounce(()=>{
+      WB_DATA.repartition.besoins = besoinsInp.value;
+      WB_DATA.repartition.envies = enviesInp.value;
+      WB_DATA.repartition.epargne = epargneInp.value;
+      updateRepTotal(); saveWbData(); updateWbToc();
+    }, 350));
+  });
+  const notesInp = document.getElementById('wbRepNotes');
+  notesInp.addEventListener('input', debounce(()=>{
+    WB_DATA.repartition.notes = notesInp.value;
+    saveWbData(); updateWbToc();
+  }, 400));
+}
+function updateRepTotal(){
+  const bEl = document.getElementById('wbRepBesoins');
+  const eEl = document.getElementById('wbRepEnvies');
+  const sEl = document.getElementById('wbRepEpargne');
+  const totalEl = document.getElementById('wbRepTotal');
+  if(!bEl || !eEl || !sEl || !totalEl) return;
+  const b = parseFloat(bEl.value) || 0;
+  const e = parseFloat(eEl.value) || 0;
+  const s = parseFloat(sEl.value) || 0;
+  const total = b+e+s;
+  totalEl.textContent = total + ' %'; totalEl.style.color = total===100 ? 'var(--wb-soft)' : '#e8a85c';
+}
+
+function renderNiv1Plan30(container){
+  container.innerHTML = `<p class="wb-intro">En 30 jours : clarifie, stabilise, structure, et fais tes premiers pas. Coche chaque étape franchie et note où tu en es.</p>
+    <div class="wb-block" id="wbPlan30List"></div>`;
+  const listEl = document.getElementById('wbPlan30List');
+  listEl.innerHTML = WB_DATA.plan30.map((step,i)=>`
+    <div style="margin-bottom:16px;">
+      <label class="wb-check-row" style="border-bottom:none;">
+        <input type="checkbox" data-plan30-idx="${i}" ${step.done?'checked':''}>
+        <span class="wb-check-box">✓</span>
+        <span class="wb-label">${escapeHtml(step.label)}</span>
+      </label>
+      <input type="text" class="wb-input" data-plan30-note="${i}" value="${escapeAttr(step.note)}" placeholder="Une note sur où tu en es…" style="margin-top:6px;">
+    </div>
+  `).join('');
+  listEl.querySelectorAll('input[type=checkbox]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.plan30[parseInt(inp.dataset.plan30Idx)].done = inp.checked;
+      saveWbData(); updateWbToc();
+    });
+  });
+  listEl.querySelectorAll('input[data-plan30-note]').forEach(inp=>{
+    inp.addEventListener('input', debounce(()=>{
+      WB_DATA.plan30[parseInt(inp.dataset.plan30Note)].note = inp.value;
+      saveWbData(); updateWbToc();
+    }, 400));
+  });
+}
+
+function renderNiv1Revenu(container){
+  const fields = [
+    {key:'competence', label:'Quelle compétence pourrais-tu monétiser en premier ?'},
+    {key:'offre', label:'Quelle offre simple pourrais-tu proposer avec cette compétence ?'},
+    {key:'premierClient', label:'Qui pourrait être ton tout premier client ou acheteur ?'},
+    {key:'actionSemaine', label:'Quelle action concrète vas-tu faire cette semaine pour avancer ?'}
+  ];
+  container.innerHTML = `<p class="wb-intro">Un revenu supplémentaire commence toujours par une compétence que tu as déjà.</p>
+  ${fields.map(f=>`
+    <div class="wb-field">
+      <label>${f.label}</label>
+      <textarea class="wb-textarea" data-rev="${f.key}">${escapeHtml(WB_DATA.revenu[f.key])}</textarea>
+    </div>
+  `).join('')}`;
+  container.querySelectorAll('textarea[data-rev]').forEach(ta=>{
+    ta.addEventListener('input', debounce(()=>{
+      WB_DATA.revenu[ta.dataset.rev] = ta.value;
+      saveWbData(); updateWbToc();
+    }, 500));
+  });
+}
+
+function renderNiv1ActifsPremiers(container){
+  const items = ["Ouvrir un compte titres ou PEA","Programmer un virement automatique vers l'épargne","Faire ma première recherche sur les ETF","Écrire le plan de mon premier actif (livre, blog, formation…)","Réserver 1h par semaine dédiée à la construction d'un actif","Identifier une compétence à transformer en offre","Suivre un premier contenu sur l'investissement","Calculer combien je pourrais investir chaque mois","Fixer une date de lancement pour mon premier projet","Parler de mon projet à une personne de confiance"];
+  container.innerHTML = `<p class="wb-intro">Coche les premiers pas concrets que tu es prêt à franchir ce mois-ci.</p><div class="wb-block">
+  ${items.map((label,i)=>`
+    <label class="wb-check-row">
+      <input type="checkbox" data-actifs1-idx="${i}" ${WB_DATA.actifsPremiers[i]?'checked':''}>
+      <span class="wb-check-box">✓</span>
+      <span class="wb-label">${label}</span>
+    </label>
+  `).join('')}
+  </div>`;
+  container.querySelectorAll('input[data-actifs1-idx]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.actifsPremiers[parseInt(inp.dataset.actifs1Idx)] = inp.checked;
+      saveWbData(); updateWbToc();
+    });
+  });
+}
+
+function renderNiv1Suivi(container){
+  const rows = [
+    {key:'revenus', label:'Revenus'},
+    {key:'depenses', label:'Dépenses'},
+    {key:'marge', label:'Marge'},
+    {key:'pourcentMarge', label:'% Marge'}
+  ];
+  const months = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc'];
+  container.innerHTML = `<p class="wb-intro">Suis ta marge mois après mois. C'est elle qui construit ta liberté.</p>
+    <div class="wb-dash-table-wrap"><table class="wb-dash-table">
+      <thead><tr><th>Indicateur</th>${months.map(m=>`<th>${m}</th>`).join('')}</tr></thead>
+      <tbody>
+        ${rows.map(r=>`
+          <tr>
+            <td>${r.label}</td>
+            ${months.map((m,mi)=>`<td><input type="text" data-suivi-row="${r.key}" data-suivi-m="${mi}" value="${escapeAttr(WB_DATA.suivi[r.key][mi])}"></td>`).join('')}
+          </tr>
+        `).join('')}
+      </tbody>
+    </table></div>`;
+  container.querySelectorAll('input[data-suivi-row]').forEach(inp=>{
+    inp.addEventListener('input', debounce(()=>{
+      WB_DATA.suivi[inp.dataset.suiviRow][parseInt(inp.dataset.suiviM)] = inp.value;
+      saveWbData(); updateWbToc();
+    }, 400));
+  });
+}
+
+function renderNiv1Defi30(container){
+  const habits = ["Vérifier mes comptes","Respecter mon budget du jour","Éviter un achat impulsif","Avancer sur ma piste de revenu","Épargner ou investir","Lire / apprendre 15 min","Noter mes dépenses","Tenir mon engagement du jour"];
+  container.innerHTML = `<p class="wb-intro">Chaque jour, pendant 30 jours. La régularité construit le contrôle.</p>
+    <div class="wb-challenge-legend" id="wbDefi30Count"></div>
+    <div class="wb-challenge-wrap"><table class="wb-challenge">
+      <thead><tr><th>Habitude</th>${Array.from({length:30},(_,i)=>`<th>${i+1}</th>`).join('')}</tr></thead>
+      <tbody>
+        ${habits.map((h,hi)=>`
+          <tr>
+            <td>${h}</td>
+            ${Array.from({length:30},(_,di)=>`
+              <td class="wb-day-cell" data-defi1-h="${hi}" data-defi1-d="${di}">
+                <div class="wb-day-dot ${WB_DATA.defi30[hi][di]?'on':''}"></div>
+              </td>
+            `).join('')}
+          </tr>
+        `).join('')}
+      </tbody>
+    </table></div>`;
+  updateDefi30Count();
+  container.querySelector('.wb-challenge').addEventListener('click', (e)=>{
+    const cell = e.target.closest('.wb-day-cell');
+    if(!cell) return;
+    const h = parseInt(cell.dataset.defi1H), d = parseInt(cell.dataset.defi1D);
+    WB_DATA.defi30[h][d] = !WB_DATA.defi30[h][d];
+    cell.querySelector('.wb-day-dot').classList.toggle('on', WB_DATA.defi30[h][d]);
+    updateDefi30Count();
+    saveWbData();
+    updateWbToc();
+  });
+}
+function updateDefi30Count(){
+  let done=0;
+  WB_DATA.defi30.forEach(row=>row.forEach(v=>{ if(v) done++; }));
+  const el = document.getElementById('wbDefi30Count');
+  if(el) el.textContent = done + ' / 240 cases cochées';
+}
+
+function renderNiv1Engagement(container){
+  container.innerHTML = `<p class="wb-intro">Tu as vu. Maintenant tu dois agir. Écris ton engagement envers toi-même pour les 30 prochains jours.</p>
+    <div class="wb-field"><label>Date</label><input type="text" class="wb-date" id="wbEng1Date" placeholder="ex : 11 juillet 2026" value="${escapeAttr(WB_DATA.engagement.date)}"></div>
+    <div class="wb-field"><label>Mon engagement</label>
+      <textarea class="wb-textarea" id="wbEng1Texte" style="min-height:200px;" placeholder="Je m'engage à… À partir d'aujourd'hui, je passe de subir à contrôler parce que…">${escapeHtml(WB_DATA.engagement.texte)}</textarea>
+    </div>`;
+  const eDateInp = document.getElementById('wbEng1Date');
+  eDateInp.addEventListener('input', debounce(()=>{
+    WB_DATA.engagement.date = eDateInp.value;
+    saveWbData(); updateWbToc();
+  }, 400));
+  const eTexteInp = document.getElementById('wbEng1Texte');
+  eTexteInp.addEventListener('input', debounce(()=>{
+    WB_DATA.engagement.texte = eTexteInp.value;
+    saveWbData(); updateWbToc();
+  }, 400));
+}
+
+const NIV1_SECTIONS = [
+  {id:'diag1', title:'Mon diagnostic de contrôle', render: renderNiv1Diag},
+  {id:'budget', title:'Exercice — Clarifier mes revenus et dépenses', render: renderNiv1Budget},
+  {id:'margeActions', title:'Check-list — Créer une marge réelle', render: renderNiv1Marge},
+  {id:'structure', title:'Exercice — Structurer mon argent', render: renderNiv1Structure},
+  {id:'plan30', title:"Mon plan d'action 30 jours", render: renderNiv1Plan30},
+  {id:'revenu', title:'Exercice — Créer un revenu supplémentaire', render: renderNiv1Revenu},
+  {id:'actifsPremiers', title:'Check-list — Premiers pas vers les actifs', render: renderNiv1ActifsPremiers},
+  {id:'suivi', title:'Mon suivi mensuel de la marge', render: renderNiv1Suivi},
+  {id:'defi30', title:'Défi 30 jours', render: renderNiv1Defi30},
+  {id:'engagement', title:'Mon engagement', render: renderNiv1Engagement},
+];
+function niv1SectionHasData(id){
+  switch(id){
+    case 'diag1': return Object.values(WB_DATA.diag).some(arr=>arr.some(Boolean));
+    case 'budget': return WB_DATA.budget.revenus.length>0 || WB_DATA.budget.depenses.length>0;
+    case 'margeActions': return WB_DATA.margeActions.some(Boolean);
+    case 'structure': return !!(WB_DATA.repartition.besoins || WB_DATA.repartition.envies || WB_DATA.repartition.epargne || (WB_DATA.repartition.notes && WB_DATA.repartition.notes.trim()));
+    case 'plan30': return WB_DATA.plan30.some(s=>s.done || (s.note && s.note.trim()));
+    case 'revenu': return Object.values(WB_DATA.revenu).some(v=>v && v.trim());
+    case 'actifsPremiers': return WB_DATA.actifsPremiers.some(Boolean);
+    case 'suivi': return Object.values(WB_DATA.suivi).some(arr=>arr.some(v=>v && String(v).trim()));
+    case 'defi30': return WB_DATA.defi30.some(row=>row.some(Boolean));
+    case 'engagement': return !!(WB_DATA.engagement.texte && WB_DATA.engagement.texte.trim());
   }
-  buildWbToc();
-  let lastId = 'diag';
-  try{ const saved = localStorage.getItem(NIV0_LAST_SECTION_KEY); if(saved && NIV0_SECTIONS.find(s=>s.id===saved)) lastId = saved; }catch(e){}
-  renderWbSection(lastId);
-  wbModal.classList.add('open');
-  document.body.classList.add('reader-active');
-  document.body.style.overflow='hidden';
+  return false;
 }
-function closeWorkbook(){
-  wbModal.classList.remove('open');
-  document.body.classList.remove('reader-active');
-  document.body.style.overflow='';
+function openWorkbook1(){
+  openWorkbookGeneric({
+    levelNum: 1,
+    defaultShape: NIV1_DEFAULT,
+    storageKey: NIV1_KEY,
+    lastSectionKey: NIV1_LAST_SECTION_KEY,
+    sections: NIV1_SECTIONS,
+    hasDataFn: niv1SectionHasData,
+    eyebrow: 'Niveau 1 · Reprendre le Contrôle'
+  });
 }
-wbModal.addEventListener('click', e=>{ if(e.target===wbModal) closeWorkbook(); });
+
 
 
 
