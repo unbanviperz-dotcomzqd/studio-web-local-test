@@ -1452,15 +1452,15 @@ footer a:hover{color:var(--ink);}
     <div class="faq" style="text-align:left;">
       <details>
         <summary>Le Plan de la Liberté est-il gratuit ?</summary>
-        <p>Oui et reçu par mail.</p>
+        <p>Oui.</p>
       </details>
       <details>
         <summary>Comment accéder à mes achats ?</summary>
-        <p>Depuis vos produits sécurisé.</p>
+        <p>Depuis votre espace membre sécurisé.</p>
       </details>
       <details>
         <summary>Les e-books peuvent-ils être téléchargés ?</summary>
-        <p>Non, dans les conditions prévues lors de l'achat ils sont disponible directement depuis le site.</p>
+        <p>Oui, dans les conditions prévues lors de l'achat.</p>
       </details>
       <details>
         <summary>Les paiements sont-ils sécurisés ?</summary>
@@ -1710,6 +1710,14 @@ function renderMyProducts(){
         }
         if(lvl.n === 3){
           openWorkbook3();
+          return;
+        }
+        if(lvl.n === 4){
+          openWorkbook4();
+          return;
+        }
+        if(lvl.n === 5){
+          openWorkbook5();
           return;
         }
         openContentModal({
@@ -3830,6 +3838,558 @@ function openWorkbook3(){
     eyebrow: 'Niveau 3 · Sécuriser ta Structure'
   });
 }
+
+/* ========================================================================
+   NIVEAU 4 — "CONSTRUIRE TES ACTIFS" (7 exercices)
+   Ancré dans les chapitres du livre sur les actifs et le passage du travail
+   au système : un actif est ce qui PRODUIT (revenu, valeur, flux) même en
+   ton absence — pas ce que tu possèdes. Objectif : distinguer actifs et
+   charges, identifier les 5 familles d'actifs, et lancer le premier.
+   ======================================================================== */
+const NIV4_KEY = 'systemeInvisible_niveau4';
+const NIV4_LAST_SECTION_KEY = 'systemeInvisible_niveau4_lastSection';
+const NIV4_DEFAULT = {
+  inventaire: { rows: [] },
+  cinqTypes: [
+    {label:'Actifs financiers (actions, ETF, investissements)', done:false, note:''},
+    {label:'Actifs immobiliers (biens générant du flux)', done:false, note:''},
+    {label:'Actifs business (produits, services, modèles duplicables)', done:false, note:''},
+    {label:'Actifs digitaux (contenu, formations, systèmes automatisés)', done:false, note:''},
+    {label:'Actifs réseau (distribution, duplication, effet collectif)', done:false, note:''}
+  ],
+  missionArgent: { vivre:'', securiser:'', construire:'', allouedCeMois:'' },
+  planActif: { choix:'', pourquoi:'', premierePasse:'', tempsParSemaine:'' },
+  etapes3: { faire: Array(3).fill(false), faireFaire: Array(3).fill(false), systeme: Array(3).fill(false) },
+  sprint14: Array.from({length:4},()=>Array(14).fill(false)),
+  suiviActifs: { revenuActifs:Array(12).fill(''), nombreActifs:Array(12).fill('') }
+};
+
+function renderNiv4Inventaire(container){
+  container.innerHTML = `<p class="wb-intro">Un actif n'est pas ce que tu possèdes, c'est ce qui produit — même quand tu n'es pas là. Liste ce que tu as aujourd'hui et vérifie : actif, ou simple charge ?</p>
+    <div class="wb-table-wrap"><table class="wb-exp-table">
+      <thead><tr><th>Élément</th><th>Type</th><th>Produit sans moi ?</th><th>Revenu (€/mois)</th><th></th></tr></thead>
+      <tbody id="wbInv4Body"></tbody>
+    </table></div>
+    <button class="wb-btn" id="wbInv4Add" type="button">+ Ajouter un élément</button>
+    <div class="wb-totals">
+      <div class="wb-total-item">Vrais actifs (produisent sans moi)<b id="wbInv4Actifs">0</b></div>
+      <div class="wb-total-item">Charges (dépendent encore de moi)<b id="wbInv4Charges">0</b></div>
+      <div class="wb-total-item">Revenu généré par mes actifs<b id="wbInv4Revenu">0 €</b></div>
+    </div>`;
+  renderInv4Rows();
+  document.getElementById('wbInv4Add').addEventListener('click', ()=>{
+    WB_DATA.inventaire.rows.push({nom:'', type:'financier', produitSansMoi:false, revenu:''});
+    renderInv4Rows(); saveWbData(); updateWbToc();
+  });
+}
+function renderInv4Rows(){
+  const body = document.getElementById('wbInv4Body');
+  if(!body) return;
+  const typeLabels = {financier:'Financier', immobilier:'Immobilier', business:'Business', digital:'Digital', reseau:'Réseau'};
+  body.innerHTML = WB_DATA.inventaire.rows.map((r,i)=>`
+    <tr data-i="${i}">
+      <td><input type="text" data-f="nom" value="${escapeAttr(r.nom)}" placeholder="ex : Blog, ETF Monde, Studio…"></td>
+      <td>
+        <select data-f="type" style="background:transparent;border:1px solid var(--line);border-radius:6px;color:var(--ink);font-size:.78rem;padding:3px 6px;">
+          ${Object.keys(typeLabels).map(t=>`<option value="${t}" ${r.type===t?'selected':''}>${typeLabels[t]}</option>`).join('')}
+        </select>
+      </td>
+      <td style="text-align:center;"><input type="checkbox" data-f="produitSansMoi" ${r.produitSansMoi?'checked':''}></td>
+      <td><input type="number" data-f="revenu" value="${escapeAttr(r.revenu)}" placeholder="0"></td>
+      <td><button class="wb-row-del" data-del="${i}" type="button">✕</button></td>
+    </tr>
+  `).join('') || `<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:16px;">Aucun élément listé pour l'instant.</td></tr>`;
+  body.querySelectorAll('input,select').forEach(inp=>{
+    const handler = ()=>{
+      const tr = inp.closest('tr'); const i = parseInt(tr.dataset.i);
+      const val = inp.type==='checkbox' ? inp.checked : inp.value;
+      WB_DATA.inventaire.rows[i][inp.dataset.f] = val;
+      updateInv4Totals(); saveWbData(); updateWbToc();
+    };
+    inp.addEventListener('input', handler);
+    inp.addEventListener('change', handler);
+  });
+  body.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      WB_DATA.inventaire.rows.splice(parseInt(btn.dataset.del),1);
+      renderInv4Rows(); saveWbData(); updateWbToc();
+    });
+  });
+  updateInv4Totals();
+}
+function updateInv4Totals(){
+  const actifs = WB_DATA.inventaire.rows.filter(r=>r.produitSansMoi).length;
+  const charges = WB_DATA.inventaire.rows.length - actifs;
+  const revenu = WB_DATA.inventaire.rows.filter(r=>r.produitSansMoi).reduce((s,r)=>s+(parseFloat(r.revenu)||0),0);
+  const aEl = document.getElementById('wbInv4Actifs'); if(aEl) aEl.textContent = actifs;
+  const cEl = document.getElementById('wbInv4Charges'); if(cEl) cEl.textContent = charges;
+  const rEl = document.getElementById('wbInv4Revenu'); if(rEl) rEl.textContent = revenu.toFixed(0) + ' €';
+}
+
+function renderNiv4CinqTypes(container){
+  container.innerHTML = `<p class="wb-intro">Il existe 5 familles d'actifs. Tu n'as pas besoin de toutes les activer — mais coche celles où tu as déjà (même un peu) commencé, et note ton premier pas concret.</p>
+    <div class="wb-block" id="wb5TypesList"></div>`;
+  const listEl = document.getElementById('wb5TypesList');
+  listEl.innerHTML = WB_DATA.cinqTypes.map((t,i)=>`
+    <div style="margin-bottom:16px;">
+      <label class="wb-check-row" style="border-bottom:none;">
+        <input type="checkbox" data-5t-idx="${i}" ${t.done?'checked':''}>
+        <span class="wb-check-box">✓</span>
+        <span class="wb-label">${escapeHtml(t.label)}</span>
+      </label>
+      <input type="text" class="wb-input" data-5t-note="${i}" value="${escapeAttr(t.note)}" placeholder="Mon premier pas concret ici…" style="margin-top:6px;">
+    </div>
+  `).join('');
+  listEl.querySelectorAll('input[type=checkbox]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.cinqTypes[parseInt(inp.dataset['5tIdx'])].done = inp.checked;
+      saveWbData(); updateWbToc();
+    });
+  });
+  listEl.querySelectorAll('input[data-5t-note]').forEach(inp=>{
+    inp.addEventListener('input', debounce(()=>{
+      WB_DATA.cinqTypes[parseInt(inp.dataset['5tNote'])].note = inp.value;
+      saveWbData(); updateWbToc();
+    }, 400));
+  });
+}
+
+function renderNiv4Mission(container){
+  container.innerHTML = `<p class="wb-intro">Chaque euro que tu gagnes a une mission : vivre, sécuriser, ou construire. C'est cette répartition qui détermine ta vitesse de construction.</p>
+    <div class="wb-grid-2">
+      <div class="wb-field"><label>% Vivre (dépenses courantes)</label>
+        <input type="number" class="wb-input" id="wbM4Vivre" value="${escapeAttr(WB_DATA.missionArgent.vivre)}" placeholder="ex : 50"></div>
+      <div class="wb-field"><label>% Sécuriser (épargne de sécurité)</label>
+        <input type="number" class="wb-input" id="wbM4Securiser" value="${escapeAttr(WB_DATA.missionArgent.securiser)}" placeholder="ex : 20"></div>
+      <div class="wb-field"><label>% Construire (actifs)</label>
+        <input type="number" class="wb-input" id="wbM4Construire" value="${escapeAttr(WB_DATA.missionArgent.construire)}" placeholder="ex : 30"></div>
+      <div class="wb-field"><label>Total</label>
+        <div class="wb-input" id="wbM4Total" style="background:transparent;"></div></div>
+    </div>
+    <div class="wb-field" style="margin-top:6px;">
+      <label>Combien as-tu réellement alloué à la construction ce mois-ci (€) ?</label>
+      <input type="number" class="wb-input" id="wbM4Montant" value="${escapeAttr(WB_DATA.missionArgent.allouedCeMois)}" placeholder="ex : 200">
+    </div>`;
+  updateM4Total();
+  const vInp = document.getElementById('wbM4Vivre'), sInp = document.getElementById('wbM4Securiser'), cInp = document.getElementById('wbM4Construire');
+  [vInp, sInp, cInp].forEach(inp=>{
+    inp.addEventListener('input', debounce(()=>{
+      WB_DATA.missionArgent.vivre = vInp.value;
+      WB_DATA.missionArgent.securiser = sInp.value;
+      WB_DATA.missionArgent.construire = cInp.value;
+      updateM4Total(); saveWbData(); updateWbToc();
+    }, 350));
+  });
+  const mInp = document.getElementById('wbM4Montant');
+  mInp.addEventListener('input', debounce(()=>{
+    WB_DATA.missionArgent.allouedCeMois = mInp.value;
+    saveWbData(); updateWbToc();
+  }, 400));
+}
+function updateM4Total(){
+  const vEl = document.getElementById('wbM4Vivre'), sEl = document.getElementById('wbM4Securiser'), cEl = document.getElementById('wbM4Construire'), tEl = document.getElementById('wbM4Total');
+  if(!vEl || !sEl || !cEl || !tEl) return;
+  const total = (parseFloat(vEl.value)||0) + (parseFloat(sEl.value)||0) + (parseFloat(cEl.value)||0);
+  tEl.textContent = total + ' %';
+  tEl.style.color = total===100 ? 'var(--wb-soft)' : '#e8a85c';
+}
+
+function renderNiv4PlanActif(container){
+  const fields = [
+    {key:'choix', label:'Quel actif choisis-tu de construire en premier ?'},
+    {key:'pourquoi', label:'Pourquoi celui-là, précisément ?'},
+    {key:'premierePasse', label:'Quelle est la toute première étape concrète pour le lancer ?'},
+    {key:'tempsParSemaine', label:'Combien de temps peux-tu y consacrer chaque semaine ?'}
+  ];
+  container.innerHTML = `<p class="wb-intro">Tu n'as pas besoin de tout construire en même temps. Choisis un actif, et lance-le vraiment.</p>
+  ${fields.map(f=>`
+    <div class="wb-field">
+      <label>${f.label}</label>
+      <textarea class="wb-textarea" data-plan4="${f.key}">${escapeHtml(WB_DATA.planActif[f.key])}</textarea>
+    </div>
+  `).join('')}`;
+  container.querySelectorAll('textarea[data-plan4]').forEach(ta=>{
+    ta.addEventListener('input', debounce(()=>{
+      WB_DATA.planActif[ta.dataset.plan4] = ta.value;
+      saveWbData(); updateWbToc();
+    }, 500));
+  });
+}
+
+function renderNiv4Etapes(container){
+  const stages = [
+    {key:'faire', label:'Étape 1 — Faire', items:["Je fais tout moi-même actuellement.","Je maîtrise le sujet de mon actif.","Je produis un premier résultat concret."]},
+    {key:'faireFaire', label:'Étape 2 — Faire faire', items:["J'ai délégué au moins une tâche.","Je m'appuie sur au moins une autre personne ou un outil.","Ma dépendance personnelle diminue."]},
+    {key:'systeme', label:'Étape 3 — Créer un système', items:["Mon processus est documenté et reproductible.","Ça peut fonctionner sans moi, au moins un temps.","Le flux généré est régulier, pas ponctuel."]}
+  ];
+  let html = `<p class="wb-intro">On ne passe pas directement au système : on évolue en 3 étapes. Coche où tu en es réellement, pas où tu voudrais être.</p>`;
+  stages.forEach(st=>{
+    html += `<div class="wb-block" data-cat="${st.key}">
+      <div class="wb-block-title">${st.label} <span class="wb-score" data-score-for="${st.key}"></span></div>
+      ${st.items.map((label,i)=>`
+        <label class="wb-check-row">
+          <input type="checkbox" data-etape-cat="${st.key}" data-etape-idx="${i}" ${WB_DATA.etapes3[st.key][i]?'checked':''}>
+          <span class="wb-check-box">✓</span>
+          <span class="wb-label">${label}</span>
+        </label>
+      `).join('')}
+    </div>`;
+  });
+  container.innerHTML = html;
+  updateEtapesScores();
+  container.querySelectorAll('input[data-etape-cat]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.etapes3[inp.dataset.etapeCat][parseInt(inp.dataset.etapeIdx)] = inp.checked;
+      updateEtapesScores();
+      saveWbData(); updateWbToc();
+    });
+  });
+}
+function updateEtapesScores(){
+  ['faire','faireFaire','systeme'].forEach(k=>{
+    const score = WB_DATA.etapes3[k].filter(Boolean).length;
+    const el = document.querySelector(`[data-score-for="${k}"]`);
+    if(el) el.textContent = score + '/3';
+  });
+}
+
+function renderNiv4Sprint(container){
+  const actions = ["Avancer sur mon premier actif","Consacrer un temps dédié, même 20 minutes","Documenter ce que je fais","Mesurer un résultat concret"];
+  container.innerHTML = `<p class="wb-intro">14 jours pour lancer réellement ton premier actif. Pas de perfection — de la constance.</p>
+    <div class="wb-challenge-legend" id="wbSprint14Count"></div>
+    <div class="wb-challenge-wrap"><table class="wb-challenge">
+      <thead><tr><th>Action</th>${Array.from({length:14},(_,i)=>`<th>${i+1}</th>`).join('')}</tr></thead>
+      <tbody>
+        ${actions.map((a,ai)=>`
+          <tr>
+            <td>${a}</td>
+            ${Array.from({length:14},(_,di)=>`
+              <td class="wb-day-cell" data-sprint4-a="${ai}" data-sprint4-d="${di}">
+                <div class="wb-day-dot ${WB_DATA.sprint14[ai][di]?'on':''}"></div>
+              </td>
+            `).join('')}
+          </tr>
+        `).join('')}
+      </tbody>
+    </table></div>`;
+  updateSprint14Count();
+  container.querySelector('.wb-challenge').addEventListener('click', (e)=>{
+    const cell = e.target.closest('.wb-day-cell');
+    if(!cell) return;
+    const a = parseInt(cell.dataset.sprint4A), d = parseInt(cell.dataset.sprint4D);
+    WB_DATA.sprint14[a][d] = !WB_DATA.sprint14[a][d];
+    cell.querySelector('.wb-day-dot').classList.toggle('on', WB_DATA.sprint14[a][d]);
+    updateSprint14Count();
+    saveWbData();
+    updateWbToc();
+  });
+}
+function updateSprint14Count(){
+  let done=0;
+  WB_DATA.sprint14.forEach(row=>row.forEach(v=>{ if(v) done++; }));
+  const el = document.getElementById('wbSprint14Count');
+  if(el) el.textContent = done + ' / 56 cases cochées';
+}
+
+function renderNiv4Suivi(container){
+  const rows = [
+    {key:'revenuActifs', label:'Revenu généré par mes actifs'},
+    {key:'nombreActifs', label:"Nombre d'actifs qui produisent"}
+  ];
+  const months = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc'];
+  container.innerHTML = `<p class="wb-intro">Suis la montée en puissance de tes actifs, mois après mois.</p>
+    <div class="wb-dash-table-wrap"><table class="wb-dash-table">
+      <thead><tr><th>Indicateur</th>${months.map(m=>`<th>${m}</th>`).join('')}</tr></thead>
+      <tbody>
+        ${rows.map(r=>`
+          <tr>
+            <td>${r.label}</td>
+            ${months.map((m,mi)=>`<td><input type="text" data-suivi4-row="${r.key}" data-suivi4-m="${mi}" value="${escapeAttr(WB_DATA.suiviActifs[r.key][mi])}"></td>`).join('')}
+          </tr>
+        `).join('')}
+      </tbody>
+    </table></div>`;
+  container.querySelectorAll('input[data-suivi4-row]').forEach(inp=>{
+    inp.addEventListener('input', debounce(()=>{
+      WB_DATA.suiviActifs[inp.dataset.suivi4Row][parseInt(inp.dataset.suivi4M)] = inp.value;
+      saveWbData(); updateWbToc();
+    }, 400));
+  });
+}
+
+const NIV4_SECTIONS = [
+  {id:'inventaire', title:'Exercice — Mon inventaire : actifs ou charges ?', render: renderNiv4Inventaire},
+  {id:'cinqTypes', title:'Exercice — Les 5 familles d\u2019actifs', render: renderNiv4CinqTypes},
+  {id:'missionArgent', title:'Exercice — La mission de chaque euro', render: renderNiv4Mission},
+  {id:'planActif', title:'Exercice — Mon premier actif à construire', render: renderNiv4PlanActif},
+  {id:'etapes3', title:'Faire → Faire faire → Créer un système', render: renderNiv4Etapes},
+  {id:'sprint14', title:'Sprint de lancement — 14 jours', render: renderNiv4Sprint},
+  {id:'suiviActifs', title:'Suivi de mes actifs', render: renderNiv4Suivi},
+];
+function niv4SectionHasData(id){
+  switch(id){
+    case 'inventaire': return WB_DATA.inventaire.rows.length>0;
+    case 'cinqTypes': return WB_DATA.cinqTypes.some(t=>t.done || (t.note && t.note.trim()));
+    case 'missionArgent': return !!(WB_DATA.missionArgent.vivre || WB_DATA.missionArgent.securiser || WB_DATA.missionArgent.construire || WB_DATA.missionArgent.allouedCeMois);
+    case 'planActif': return Object.values(WB_DATA.planActif).some(v=>v && v.trim());
+    case 'etapes3': return Object.values(WB_DATA.etapes3).some(arr=>arr.some(Boolean));
+    case 'sprint14': return WB_DATA.sprint14.some(row=>row.some(Boolean));
+    case 'suiviActifs': return Object.values(WB_DATA.suiviActifs).some(arr=>arr.some(v=>v && String(v).trim()));
+  }
+  return false;
+}
+function openWorkbook4(){
+  openWorkbookGeneric({
+    levelNum: 4,
+    defaultShape: NIV4_DEFAULT,
+    storageKey: NIV4_KEY,
+    lastSectionKey: NIV4_LAST_SECTION_KEY,
+    sections: NIV4_SECTIONS,
+    hasDataFn: niv4SectionHasData,
+    eyebrow: 'Niveau 4 · Construire tes Actifs'
+  });
+}
+
+
+/* ========================================================================
+   NIVEAU 5 — "ACCÉLÉRER TA LIBERTÉ" (7 exercices)
+   Ancré dans le chapitre du livre sur le levier : 4 leviers fondamentaux
+   (temps des autres, argent, système, technologie) qui permettent de
+   multiplier plutôt que d'ajouter, et le modèle des 3 flux (entrant,
+   transformation, sortant) pour connecter ce qui a été construit.
+   ======================================================================== */
+const NIV5_KEY = 'systemeInvisible_niveau5';
+const NIV5_LAST_SECTION_KEY = 'systemeInvisible_niveau5_lastSection';
+const NIV5_DEFAULT = {
+  leviers: [
+    {label:'Le levier du temps des autres (déléguer, s\u2019entourer, construire une équipe)', utilise:false, note:''},
+    {label:'Le levier de l\u2019argent (capital, investissement, structure)', utilise:false, note:''},
+    {label:'Le levier du système (un processus qui fonctionne sans toi)', utilise:false, note:''},
+    {label:'Le levier de la technologie (automatisation, contenu, digital)', utilise:false, note:''}
+  ],
+  delegationList: Array(8).fill(false),
+  automatisationList: Array(8).fill(false),
+  combiner: { temps:'', argent:'', systeme:'', technologie:'' },
+  cycleFlux: { entrant:'', transformation:'', sortant:'' },
+  suiviAcceleration: { revenuTotal:Array(12).fill(''), revenuLeviers:Array(12).fill(''), heuresSemaine:Array(12).fill('') },
+  bilanFinal: Array(10).fill(false)
+};
+
+function renderNiv5Leviers(container){
+  container.innerHTML = `<p class="wb-intro">"Sans levier, tu progresses. Avec levier, tu accélères." Il existe 4 leviers fondamentaux. Coche ceux que tu utilises déjà, même un peu, et note comment.</p>
+    <div class="wb-block" id="wbLeviersList"></div>`;
+  const listEl = document.getElementById('wbLeviersList');
+  listEl.innerHTML = WB_DATA.leviers.map((l,i)=>`
+    <div style="margin-bottom:16px;">
+      <label class="wb-check-row" style="border-bottom:none;">
+        <input type="checkbox" data-lev-idx="${i}" ${l.utilise?'checked':''}>
+        <span class="wb-check-box">✓</span>
+        <span class="wb-label">${escapeHtml(l.label)}</span>
+      </label>
+      <input type="text" class="wb-input" data-lev-note="${i}" value="${escapeAttr(l.note)}" placeholder="Comment je l'utilise, ou comment je pourrais commencer…" style="margin-top:6px;">
+    </div>
+  `).join('');
+  listEl.querySelectorAll('input[type=checkbox]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.leviers[parseInt(inp.dataset.levIdx)].utilise = inp.checked;
+      saveWbData(); updateWbToc();
+    });
+  });
+  listEl.querySelectorAll('input[data-lev-note]').forEach(inp=>{
+    inp.addEventListener('input', debounce(()=>{
+      WB_DATA.leviers[parseInt(inp.dataset.levNote)].note = inp.value;
+      saveWbData(); updateWbToc();
+    }, 400));
+  });
+}
+
+function renderNiv5Delegation(container){
+  const items = ["Identifier une tâche répétitive que je pourrais déléguer","Documenter le processus étape par étape","Trouver une personne ou un prestataire de confiance","Déléguer une première mission test","Créer un support simple (vidéo, doc) pour transmettre","Fixer un point de suivi régulier","Accepter que ce ne soit pas fait exactement comme moi","Mesurer le temps que ça me libère réellement"];
+  container.innerHTML = `<p class="wb-intro">Le levier du temps des autres commence par une première délégation. Coche ce que tu mets en place.</p><div class="wb-block">
+  ${items.map((label,i)=>`
+    <label class="wb-check-row">
+      <input type="checkbox" data-deleg-idx="${i}" ${WB_DATA.delegationList[i]?'checked':''}>
+      <span class="wb-check-box">✓</span>
+      <span class="wb-label">${label}</span>
+    </label>
+  `).join('')}
+  </div>`;
+  container.querySelectorAll('input[data-deleg-idx]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.delegationList[parseInt(inp.dataset.delegIdx)] = inp.checked;
+      saveWbData(); updateWbToc();
+    });
+  });
+}
+
+function renderNiv5Automatisation(container){
+  const items = ["Identifier une tâche répétitive automatisable","Tester un premier outil d'automatisation","Créer un contenu qui travaille pour moi en continu","Mettre en place une séquence automatique (email, message)","Automatiser un paiement ou virement récurrent","Utiliser un modèle ou template réutilisable","Supprimer une étape manuelle devenue inutile","Mesurer le temps réellement gagné"];
+  container.innerHTML = `<p class="wb-intro">Le levier de la technologie te permet de produire une fois et de diffuser plusieurs fois. Coche ce que tu mets en place.</p><div class="wb-block">
+  ${items.map((label,i)=>`
+    <label class="wb-check-row">
+      <input type="checkbox" data-auto-idx="${i}" ${WB_DATA.automatisationList[i]?'checked':''}>
+      <span class="wb-check-box">✓</span>
+      <span class="wb-label">${label}</span>
+    </label>
+  `).join('')}
+  </div>`;
+  container.querySelectorAll('input[data-auto-idx]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.automatisationList[parseInt(inp.dataset.autoIdx)] = inp.checked;
+      saveWbData(); updateWbToc();
+    });
+  });
+}
+
+function renderNiv5Combiner(container){
+  const fields = [
+    {key:'temps', label:'Levier Temps des autres — qui pourrais-je impliquer ou déléguer davantage ?'},
+    {key:'argent', label:'Levier Argent — quel capital pourrais-je mobiliser ou réinvestir ?'},
+    {key:'systeme', label:'Levier Système — quel processus pourrais-je rendre reproductible ?'},
+    {key:'technologie', label:'Levier Technologie — quel outil ou automatisation pourrais-je mettre en place ?'}
+  ];
+  container.innerHTML = `<p class="wb-intro">Les leviers isolés progressent. Combinés, ils multiplient. Note un plan concret pour chacun.</p>
+  ${fields.map(f=>`
+    <div class="wb-field">
+      <label>${f.label}</label>
+      <textarea class="wb-textarea" data-comb="${f.key}">${escapeHtml(WB_DATA.combiner[f.key])}</textarea>
+    </div>
+  `).join('')}`;
+  container.querySelectorAll('textarea[data-comb]').forEach(ta=>{
+    ta.addEventListener('input', debounce(()=>{
+      WB_DATA.combiner[ta.dataset.comb] = ta.value;
+      saveWbData(); updateWbToc();
+    }, 500));
+  });
+}
+
+function renderNiv5CycleFlux(container){
+  container.innerHTML = `<p class="wb-intro">Un système repose sur 3 flux : ce que tu gagnes (entrant), ce que tu en fais (transformation), ce que ça produit (sortant). Décris honnêtement où tu en es.</p>
+    <div class="wb-field">
+      <label>Flux entrant — d'où vient ton revenu aujourd'hui ?</label>
+      <textarea class="wb-textarea" id="wbFluxEntrant">${escapeHtml(WB_DATA.cycleFlux.entrant)}</textarea>
+    </div>
+    <div class="wb-field">
+      <label>Flux de transformation — que fais-tu réellement de ce que tu gagnes ?</label>
+      <textarea class="wb-textarea" id="wbFluxTransfo">${escapeHtml(WB_DATA.cycleFlux.transformation)}</textarea>
+    </div>
+    <div class="wb-field">
+      <label>Flux sortant — qu'est-ce que ton système produit aujourd'hui : stabilité, croissance, liberté… ou dépendance ?</label>
+      <textarea class="wb-textarea" id="wbFluxSortant">${escapeHtml(WB_DATA.cycleFlux.sortant)}</textarea>
+    </div>`;
+  const eInp = document.getElementById('wbFluxEntrant');
+  eInp.addEventListener('input', debounce(()=>{
+    WB_DATA.cycleFlux.entrant = eInp.value; saveWbData(); updateWbToc();
+  }, 500));
+  const tInp = document.getElementById('wbFluxTransfo');
+  tInp.addEventListener('input', debounce(()=>{
+    WB_DATA.cycleFlux.transformation = tInp.value; saveWbData(); updateWbToc();
+  }, 500));
+  const sInp = document.getElementById('wbFluxSortant');
+  sInp.addEventListener('input', debounce(()=>{
+    WB_DATA.cycleFlux.sortant = sInp.value; saveWbData(); updateWbToc();
+  }, 500));
+}
+
+function renderNiv5Suivi(container){
+  const rows = [
+    {key:'revenuTotal', label:'Revenu total'},
+    {key:'revenuLeviers', label:'Revenu généré via mes leviers'},
+    {key:'heuresSemaine', label:'Heures travaillées / semaine'}
+  ];
+  const months = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc'];
+  container.innerHTML = `<p class="wb-intro">Le signe que tu accélères vraiment : ton revenu monte pendant que ton temps de travail personnel baisse.</p>
+    <div class="wb-dash-table-wrap"><table class="wb-dash-table">
+      <thead><tr><th>Indicateur</th>${months.map(m=>`<th>${m}</th>`).join('')}</tr></thead>
+      <tbody>
+        ${rows.map(r=>`
+          <tr>
+            <td>${r.label}</td>
+            ${months.map((m,mi)=>`<td><input type="text" data-suivi5-row="${r.key}" data-suivi5-m="${mi}" value="${escapeAttr(WB_DATA.suiviAcceleration[r.key][mi])}"></td>`).join('')}
+          </tr>
+        `).join('')}
+      </tbody>
+    </table></div>`;
+  container.querySelectorAll('input[data-suivi5-row]').forEach(inp=>{
+    inp.addEventListener('input', debounce(()=>{
+      WB_DATA.suiviAcceleration[inp.dataset.suivi5Row][parseInt(inp.dataset.suivi5M)] = inp.value;
+      saveWbData(); updateWbToc();
+    }, 400));
+  });
+}
+
+function renderNiv5Bilan(container){
+  const items = [
+    "J'utilise consciemment au moins un des 4 leviers.",
+    "J'ai délégué au moins une tâche à quelqu'un d'autre.",
+    "J'ai automatisé au moins une tâche répétitive.",
+    "Mon revenu ne dépend plus uniquement de mes heures travaillées.",
+    "Je vois mon temps libre augmenter, pas diminuer.",
+    "Mes leviers commencent à se combiner entre eux.",
+    "Je pense en \"comment multiplier\" plutôt qu'en \"comment faire plus\".",
+    "Mon flux entrant → transformation → sortant est plus clair qu'avant.",
+    "Je réinvestis une partie de ce que je gagne dans mon système.",
+    "Je suis prêt à optimiser mon temps (Niveau 6)."
+  ];
+  container.innerHTML = `<p class="wb-intro">Dernier point avant la suite. Coche ce qui est vrai aujourd'hui.</p>
+    <div class="wb-block">
+    ${items.map((label,i)=>`
+      <label class="wb-check-row">
+        <input type="checkbox" data-bilan5-idx="${i}" ${WB_DATA.bilanFinal[i]?'checked':''}>
+        <span class="wb-check-box">✓</span>
+        <span class="wb-label">${label}</span>
+      </label>
+    `).join('')}
+    </div>
+    <div class="wb-block-title" style="margin-top:10px;">Bilan <span class="wb-score" id="wbBilan5Score"></span></div>`;
+  updateBilan5Score();
+  container.querySelectorAll('input[data-bilan5-idx]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.bilanFinal[parseInt(inp.dataset.bilan5Idx)] = inp.checked;
+      updateBilan5Score();
+      saveWbData(); updateWbToc();
+    });
+  });
+}
+function updateBilan5Score(){
+  const score = WB_DATA.bilanFinal.filter(Boolean).length;
+  const el = document.getElementById('wbBilan5Score');
+  if(el) el.textContent = score + '/10';
+}
+
+const NIV5_SECTIONS = [
+  {id:'leviers', title:'Exercice — Mes 4 leviers actuels', render: renderNiv5Leviers},
+  {id:'delegationList', title:'Check-list — Premiers pas de délégation', render: renderNiv5Delegation},
+  {id:'automatisationList', title:'Check-list — Premiers pas d\u2019automatisation', render: renderNiv5Automatisation},
+  {id:'combiner', title:'Exercice — Combiner mes leviers', render: renderNiv5Combiner},
+  {id:'cycleFlux', title:'Exercice — Mon cycle de flux', render: renderNiv5CycleFlux},
+  {id:'suiviAcceleration', title:'Suivi de mon accélération', render: renderNiv5Suivi},
+  {id:'bilanFinal', title:'Bilan final — Prêt pour le Niveau 6 ?', render: renderNiv5Bilan},
+];
+function niv5SectionHasData(id){
+  switch(id){
+    case 'leviers': return WB_DATA.leviers.some(l=>l.utilise || (l.note && l.note.trim()));
+    case 'delegationList': return WB_DATA.delegationList.some(Boolean);
+    case 'automatisationList': return WB_DATA.automatisationList.some(Boolean);
+    case 'combiner': return Object.values(WB_DATA.combiner).some(v=>v && v.trim());
+    case 'cycleFlux': return Object.values(WB_DATA.cycleFlux).some(v=>v && v.trim());
+    case 'suiviAcceleration': return Object.values(WB_DATA.suiviAcceleration).some(arr=>arr.some(v=>v && String(v).trim()));
+    case 'bilanFinal': return WB_DATA.bilanFinal.some(Boolean);
+  }
+  return false;
+}
+function openWorkbook5(){
+  openWorkbookGeneric({
+    levelNum: 5,
+    defaultShape: NIV5_DEFAULT,
+    storageKey: NIV5_KEY,
+    lastSectionKey: NIV5_LAST_SECTION_KEY,
+    sections: NIV5_SECTIONS,
+    hasDataFn: niv5SectionHasData,
+    eyebrow: 'Niveau 5 · Accélérer ta Liberté'
+  });
+}
+
 
 
 
