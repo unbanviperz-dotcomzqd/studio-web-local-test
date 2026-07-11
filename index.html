@@ -1720,6 +1720,14 @@ function renderMyProducts(){
           openWorkbook5();
           return;
         }
+        if(lvl.n === 6){
+          openWorkbook6();
+          return;
+        }
+        if(lvl.n === 7){
+          openWorkbook7();
+          return;
+        }
         openContentModal({
           num: 'Niveau ' + lvl.n,
           tag: 'Niveau ' + lvl.n + ' · Débloqué',
@@ -4389,6 +4397,768 @@ function openWorkbook5(){
     eyebrow: 'Niveau 5 · Accélérer ta Liberté'
   });
 }
+
+/* ========================================================================
+   NIVEAU 6 — "OPTIMISER TES FLUX" (9 exercices)
+   Suite logique du Niveau 5 : le modèle des 3 flux est en place, les leviers
+   commencent à tourner. Maintenant on affine : quels flux rapportent
+   vraiment, lesquels freinent, et comment doubler la mise sur ce qui marche.
+   Beaucoup de tableaux ici — l'optimisation se voit dans les chiffres.
+   ======================================================================== */
+const NIV6_KEY = 'systemeInvisible_niveau6';
+const NIV6_LAST_SECTION_KEY = 'systemeInvisible_niveau6_lastSection';
+const NIV6_DEFAULT = {
+  auditFlux: { rows: [] },
+  matrice: { rows: [] },
+  freinList: Array(10).fill(false),
+  marcheList: Array(10).fill(false),
+  planOptim: { rows: [] },
+  rendement: {
+    revenu:Array(12).fill(''), couts:Array(12).fill(''), margeNette:Array(12).fill(''), pourcentOptimise:Array(12).fill('')
+  },
+  revueHebdo: { rows: [] },
+  sprint21: Array.from({length:4},()=>Array(21).fill(false)),
+  bilanFinal: Array(10).fill(false)
+};
+
+function renderNiv6Audit(container){
+  container.innerHTML = `<p class="wb-intro">Liste chaque flux de revenu et regarde-le honnêtement : combien ça rapporte, combien de temps ça prend, où ça va.</p>
+    <div class="wb-table-wrap"><table class="wb-exp-table">
+      <thead><tr><th>Flux</th><th>Revenu (€/mois)</th><th>Temps (h/semaine)</th><th>Tendance</th><th></th></tr></thead>
+      <tbody id="wbAuditBody"></tbody>
+    </table></div>
+    <button class="wb-btn" id="wbAuditAdd" type="button">+ Ajouter un flux</button>
+    <div class="wb-totals">
+      <div class="wb-total-item">Revenu total<b id="wbAuditRevenu">0 €</b></div>
+      <div class="wb-total-item">Rendement horaire moyen<b id="wbAuditRdt">0 €/h</b></div>
+    </div>`;
+  renderAuditRows();
+  document.getElementById('wbAuditAdd').addEventListener('click', ()=>{
+    WB_DATA.auditFlux.rows.push({flux:'', revenu:'', temps:'', tendance:'stable'});
+    renderAuditRows(); saveWbData(); updateWbToc();
+  });
+}
+function renderAuditRows(){
+  const body = document.getElementById('wbAuditBody');
+  if(!body) return;
+  body.innerHTML = WB_DATA.auditFlux.rows.map((r,i)=>`
+    <tr data-i="${i}">
+      <td><input type="text" data-f="flux" value="${escapeAttr(r.flux)}" placeholder="ex : Freelance, Blog, Location…"></td>
+      <td><input type="number" data-f="revenu" value="${escapeAttr(r.revenu)}" placeholder="0"></td>
+      <td><input type="number" data-f="temps" value="${escapeAttr(r.temps)}" placeholder="0"></td>
+      <td>
+        <select data-f="tendance" style="background:transparent;border:1px solid var(--line);border-radius:6px;color:var(--ink);font-size:.78rem;padding:3px 6px;">
+          <option value="croissant" ${r.tendance==='croissant'?'selected':''}>Croissant</option>
+          <option value="stable" ${r.tendance==='stable'?'selected':''}>Stable</option>
+          <option value="decroissant" ${r.tendance==='decroissant'?'selected':''}>Décroissant</option>
+        </select>
+      </td>
+      <td><button class="wb-row-del" data-del="${i}" type="button">✕</button></td>
+    </tr>
+  `).join('') || `<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:16px;">Aucun flux listé pour l'instant.</td></tr>`;
+  body.querySelectorAll('input,select').forEach(inp=>{
+    const handler = ()=>{
+      const tr = inp.closest('tr'); const i = parseInt(tr.dataset.i);
+      WB_DATA.auditFlux.rows[i][inp.dataset.f] = inp.value;
+      updateAuditTotals(); saveWbData(); updateWbToc();
+    };
+    inp.addEventListener('input', handler);
+    inp.addEventListener('change', handler);
+  });
+  body.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      WB_DATA.auditFlux.rows.splice(parseInt(btn.dataset.del),1);
+      renderAuditRows(); saveWbData(); updateWbToc();
+    });
+  });
+  updateAuditTotals();
+}
+function updateAuditTotals(){
+  let revenu=0, temps=0;
+  WB_DATA.auditFlux.rows.forEach(r=>{
+    revenu += parseFloat(r.revenu)||0;
+    temps += parseFloat(r.temps)||0;
+  });
+  const rEl = document.getElementById('wbAuditRevenu'); if(rEl) rEl.textContent = revenu.toFixed(0) + ' €';
+  const hEl = document.getElementById('wbAuditRdt'); if(hEl) hEl.textContent = (temps>0 ? (revenu/(temps*4.33)).toFixed(1) : '0') + ' €/h';
+}
+
+function renderNiv6Matrice(container){
+  container.innerHTML = `<p class="wb-intro">Pour chaque activité qui prend du temps ou de l'argent, évalue l'effort qu'elle demande et l'impact qu'elle produit. La décision se prend d'elle-même.</p>
+    <div class="wb-table-wrap"><table class="wb-exp-table">
+      <thead><tr><th>Activité</th><th>Effort</th><th>Impact</th><th>Décision</th><th></th></tr></thead>
+      <tbody id="wbMatriceBody"></tbody>
+    </table></div>
+    <button class="wb-btn" id="wbMatriceAdd" type="button">+ Ajouter une activité</button>`;
+  renderMatriceRows();
+  document.getElementById('wbMatriceAdd').addEventListener('click', ()=>{
+    WB_DATA.matrice.rows.push({activite:'', effort:'moyen', impact:'moyen', decision:'garder'});
+    renderMatriceRows(); saveWbData(); updateWbToc();
+  });
+}
+function renderMatriceRows(){
+  const body = document.getElementById('wbMatriceBody');
+  if(!body) return;
+  body.innerHTML = WB_DATA.matrice.rows.map((r,i)=>`
+    <tr data-i="${i}">
+      <td><input type="text" data-f="activite" value="${escapeAttr(r.activite)}" placeholder="ex : Répondre aux emails, Créer du contenu…"></td>
+      <td>
+        <select data-f="effort" style="background:transparent;border:1px solid var(--line);border-radius:6px;color:var(--ink);font-size:.78rem;padding:3px 6px;">
+          <option value="faible" ${r.effort==='faible'?'selected':''}>Faible</option>
+          <option value="moyen" ${r.effort==='moyen'?'selected':''}>Moyen</option>
+          <option value="eleve" ${r.effort==='eleve'?'selected':''}>Élevé</option>
+        </select>
+      </td>
+      <td>
+        <select data-f="impact" style="background:transparent;border:1px solid var(--line);border-radius:6px;color:var(--ink);font-size:.78rem;padding:3px 6px;">
+          <option value="faible" ${r.impact==='faible'?'selected':''}>Faible</option>
+          <option value="moyen" ${r.impact==='moyen'?'selected':''}>Moyen</option>
+          <option value="eleve" ${r.impact==='eleve'?'selected':''}>Élevé</option>
+        </select>
+      </td>
+      <td>
+        <select data-f="decision" style="background:transparent;border:1px solid var(--line);border-radius:6px;color:var(--ink);font-size:.78rem;padding:3px 6px;">
+          <option value="amplifier" ${r.decision==='amplifier'?'selected':''}>Amplifier</option>
+          <option value="garder" ${r.decision==='garder'?'selected':''}>Garder</option>
+          <option value="reduire" ${r.decision==='reduire'?'selected':''}>Réduire</option>
+          <option value="arreter" ${r.decision==='arreter'?'selected':''}>Arrêter</option>
+        </select>
+      </td>
+      <td><button class="wb-row-del" data-del="${i}" type="button">✕</button></td>
+    </tr>
+  `).join('') || `<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:16px;">Aucune activité listée pour l'instant.</td></tr>`;
+  body.querySelectorAll('input,select').forEach(inp=>{
+    const handler = ()=>{
+      const tr = inp.closest('tr'); const i = parseInt(tr.dataset.i);
+      WB_DATA.matrice.rows[i][inp.dataset.f] = inp.value;
+      saveWbData(); updateWbToc();
+    };
+    inp.addEventListener('input', handler);
+    inp.addEventListener('change', handler);
+  });
+  body.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      WB_DATA.matrice.rows.splice(parseInt(btn.dataset.del),1);
+      renderMatriceRows(); saveWbData(); updateWbToc();
+    });
+  });
+}
+
+function renderNiv6Frein(container){
+  const items = ["Un abonnement ou frais inutile s'est réintroduit","Une tâche à faible valeur me prend trop de temps","Un processus manuel pourrait être automatisé","Une activité ne rapporte plus ce qu'elle rapportait","Je remets à plus tard une décision qui devrait être prise","Une dépense récurrente n'a plus été réévaluée depuis longtemps","Je fais encore quelque chose que je pourrais déléguer","Un outil que j'utilise ne me sert plus vraiment","Je disperse mon attention entre trop de fronts","Je n'ai pas mesuré mes résultats depuis un moment"];
+  container.innerHTML = `<p class="wb-intro">Coche ce qui freine réellement tes flux aujourd'hui — c'est la première chose à corriger.</p><div class="wb-block">
+  ${items.map((label,i)=>`
+    <label class="wb-check-row">
+      <input type="checkbox" data-frein-idx="${i}" ${WB_DATA.freinList[i]?'checked':''}>
+      <span class="wb-check-box">✓</span>
+      <span class="wb-label">${label}</span>
+    </label>
+  `).join('')}
+  </div>`;
+  container.querySelectorAll('input[data-frein-idx]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.freinList[parseInt(inp.dataset.freinIdx)] = inp.checked;
+      saveWbData(); updateWbToc();
+    });
+  });
+}
+
+function renderNiv6Marche(container){
+  const items = ["Une source de revenu progresse régulièrement","Une activité rapporte plus que le temps qu'elle demande","Un actif produit sans effort supplémentaire de ma part","Un contenu ou produit continue de se vendre seul","Une méthode ou un process fonctionne à chaque fois","Une relation ou un partenariat génère de la valeur en continu","Un client ou une audience revient de lui-même","Un système que j'ai mis en place tient sans ajustement","Une compétence me rapporte plus qu'avant","Un investissement produit un rendement stable"];
+  container.innerHTML = `<p class="wb-intro">Coche ce qui fonctionne déjà bien — c'est là qu'il faut mettre plus de ressources, pas ailleurs.</p><div class="wb-block">
+  ${items.map((label,i)=>`
+    <label class="wb-check-row">
+      <input type="checkbox" data-marche-idx="${i}" ${WB_DATA.marcheList[i]?'checked':''}>
+      <span class="wb-check-box">✓</span>
+      <span class="wb-label">${label}</span>
+    </label>
+  `).join('')}
+  </div>`;
+  container.querySelectorAll('input[data-marche-idx]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.marcheList[parseInt(inp.dataset.marcheIdx)] = inp.checked;
+      saveWbData(); updateWbToc();
+    });
+  });
+}
+
+function renderNiv6PlanOptim(container){
+  container.innerHTML = `<p class="wb-intro">Transforme ton audit en plan d'action concret, avec un objectif chiffré et une échéance.</p>
+    <div class="wb-table-wrap"><table class="wb-exp-table">
+      <thead><tr><th>Action</th><th>Flux concerné</th><th>Objectif</th><th>Échéance</th><th></th></tr></thead>
+      <tbody id="wbPlanOptimBody"></tbody>
+    </table></div>
+    <button class="wb-btn" id="wbPlanOptimAdd" type="button">+ Ajouter une action</button>`;
+  renderPlanOptimRows();
+  document.getElementById('wbPlanOptimAdd').addEventListener('click', ()=>{
+    WB_DATA.planOptim.rows.push({action:'', flux:'', objectif:'', echeance:''});
+    renderPlanOptimRows(); saveWbData(); updateWbToc();
+  });
+}
+function renderPlanOptimRows(){
+  const body = document.getElementById('wbPlanOptimBody');
+  if(!body) return;
+  body.innerHTML = WB_DATA.planOptim.rows.map((r,i)=>`
+    <tr data-i="${i}">
+      <td><input type="text" data-f="action" value="${escapeAttr(r.action)}" placeholder="ex : Automatiser la facturation"></td>
+      <td><input type="text" data-f="flux" value="${escapeAttr(r.flux)}" placeholder="ex : Freelance"></td>
+      <td><input type="text" data-f="objectif" value="${escapeAttr(r.objectif)}" placeholder="ex : -3h/semaine"></td>
+      <td><input type="text" data-f="echeance" value="${escapeAttr(r.echeance)}" placeholder="ex : Fin du mois"></td>
+      <td><button class="wb-row-del" data-del="${i}" type="button">✕</button></td>
+    </tr>
+  `).join('') || `<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:16px;">Aucune action planifiée pour l'instant.</td></tr>`;
+  body.querySelectorAll('input').forEach(inp=>{
+    const handler = ()=>{
+      const tr = inp.closest('tr'); const i = parseInt(tr.dataset.i);
+      WB_DATA.planOptim.rows[i][inp.dataset.f] = inp.value;
+      saveWbData(); updateWbToc();
+    };
+    inp.addEventListener('input', handler);
+  });
+  body.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      WB_DATA.planOptim.rows.splice(parseInt(btn.dataset.del),1);
+      renderPlanOptimRows(); saveWbData(); updateWbToc();
+    });
+  });
+}
+
+function renderNiv6Rendement(container){
+  const rows = [
+    {key:'revenu', label:'Revenu total'},
+    {key:'couts', label:'Coûts / frictions'},
+    {key:'margeNette', label:'Marge nette'},
+    {key:'pourcentOptimise', label:'% de flux jugés optimisés'}
+  ];
+  const months = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc'];
+  container.innerHTML = `<p class="wb-intro">Suis l'effet réel de tes optimisations, mois après mois.</p>
+    <div class="wb-dash-table-wrap"><table class="wb-dash-table">
+      <thead><tr><th>Indicateur</th>${months.map(m=>`<th>${m}</th>`).join('')}</tr></thead>
+      <tbody>
+        ${rows.map(r=>`
+          <tr>
+            <td>${r.label}</td>
+            ${months.map((m,mi)=>`<td><input type="text" data-rdt-row="${r.key}" data-rdt-m="${mi}" value="${escapeAttr(WB_DATA.rendement[r.key][mi])}"></td>`).join('')}
+          </tr>
+        `).join('')}
+      </tbody>
+    </table></div>`;
+  container.querySelectorAll('input[data-rdt-row]').forEach(inp=>{
+    inp.addEventListener('input', debounce(()=>{
+      WB_DATA.rendement[inp.dataset.rdtRow][parseInt(inp.dataset.rdtM)] = inp.value;
+      saveWbData(); updateWbToc();
+    }, 400));
+  });
+}
+
+function renderNiv6Revue(container){
+  container.innerHTML = `<p class="wb-intro">Chaque semaine, un point rapide : ce qui a marché, ce qui a freiné, ce que tu ajustes. C'est ce rituel qui optimise vraiment, pas une seule grande décision.</p>
+    <div class="wb-table-wrap"><table class="wb-exp-table">
+      <thead><tr><th>Semaine du</th><th>Ce qui a marché</th><th>Ce qui a freiné</th><th>Mon ajustement</th><th></th></tr></thead>
+      <tbody id="wbRevueBody"></tbody>
+    </table></div>
+    <button class="wb-btn" id="wbRevueAdd" type="button">+ Ajouter une semaine</button>`;
+  renderRevueRows();
+  document.getElementById('wbRevueAdd').addEventListener('click', ()=>{
+    WB_DATA.revueHebdo.rows.push({semaine:'', marche:'', freine:'', ajustement:''});
+    renderRevueRows(); saveWbData(); updateWbToc();
+  });
+}
+function renderRevueRows(){
+  const body = document.getElementById('wbRevueBody');
+  if(!body) return;
+  body.innerHTML = WB_DATA.revueHebdo.rows.map((r,i)=>`
+    <tr data-i="${i}">
+      <td><input type="text" data-f="semaine" value="${escapeAttr(r.semaine)}" placeholder="ex : 14/07"></td>
+      <td><input type="text" data-f="marche" value="${escapeAttr(r.marche)}" placeholder="…"></td>
+      <td><input type="text" data-f="freine" value="${escapeAttr(r.freine)}" placeholder="…"></td>
+      <td><input type="text" data-f="ajustement" value="${escapeAttr(r.ajustement)}" placeholder="…"></td>
+      <td><button class="wb-row-del" data-del="${i}" type="button">✕</button></td>
+    </tr>
+  `).join('') || `<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:16px;">Aucune revue enregistrée pour l'instant.</td></tr>`;
+  body.querySelectorAll('input').forEach(inp=>{
+    const handler = ()=>{
+      const tr = inp.closest('tr'); const i = parseInt(tr.dataset.i);
+      WB_DATA.revueHebdo.rows[i][inp.dataset.f] = inp.value;
+      saveWbData(); updateWbToc();
+    };
+    inp.addEventListener('input', handler);
+  });
+  body.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      WB_DATA.revueHebdo.rows.splice(parseInt(btn.dataset.del),1);
+      renderRevueRows(); saveWbData(); updateWbToc();
+    });
+  });
+}
+
+function renderNiv6Sprint(container){
+  const actions = ["Analyser un flux en détail","Éliminer une friction identifiée","Amplifier ce qui fonctionne déjà","Mesurer un résultat concret"];
+  container.innerHTML = `<p class="wb-intro">21 jours pour ancrer le réflexe d'optimisation continue.</p>
+    <div class="wb-challenge-legend" id="wbSprint6Count"></div>
+    <div class="wb-challenge-wrap"><table class="wb-challenge">
+      <thead><tr><th>Action</th>${Array.from({length:21},(_,i)=>`<th>${i+1}</th>`).join('')}</tr></thead>
+      <tbody>
+        ${actions.map((a,ai)=>`
+          <tr>
+            <td>${a}</td>
+            ${Array.from({length:21},(_,di)=>`
+              <td class="wb-day-cell" data-sprint6-a="${ai}" data-sprint6-d="${di}">
+                <div class="wb-day-dot ${WB_DATA.sprint21[ai][di]?'on':''}"></div>
+              </td>
+            `).join('')}
+          </tr>
+        `).join('')}
+      </tbody>
+    </table></div>`;
+  updateSprint6Count();
+  container.querySelector('.wb-challenge').addEventListener('click', (e)=>{
+    const cell = e.target.closest('.wb-day-cell');
+    if(!cell) return;
+    const a = parseInt(cell.dataset.sprint6A), d = parseInt(cell.dataset.sprint6D);
+    WB_DATA.sprint21[a][d] = !WB_DATA.sprint21[a][d];
+    cell.querySelector('.wb-day-dot').classList.toggle('on', WB_DATA.sprint21[a][d]);
+    updateSprint6Count();
+    saveWbData();
+    updateWbToc();
+  });
+}
+function updateSprint6Count(){
+  let done=0;
+  WB_DATA.sprint21.forEach(row=>row.forEach(v=>{ if(v) done++; }));
+  const el = document.getElementById('wbSprint6Count');
+  if(el) el.textContent = done + ' / 84 cases cochées';
+}
+
+function renderNiv6Bilan(container){
+  const items = [
+    "J'ai un état des lieux clair de tous mes flux de revenus.",
+    "Je sais lesquels rapportent le plus par heure investie.",
+    "J'ai identifié ce qui freine réellement ma progression.",
+    "J'ai réduit ou arrêté au moins une activité à faible valeur.",
+    "J'ai amplifié au moins une activité qui fonctionne déjà.",
+    "Je fais une revue régulière de mes flux, pas juste ponctuelle.",
+    "Ma marge nette progresse, pas seulement mon revenu brut.",
+    "Je décide avec des chiffres, pas seulement avec des impressions.",
+    "Mon temps est de mieux en mieux investi, mois après mois.",
+    "Je suis prêt à transmettre ce que j'ai appris (Niveau 7)."
+  ];
+  container.innerHTML = `<p class="wb-intro">Dernier point avant la suite. Coche ce qui est vrai aujourd'hui.</p>
+    <div class="wb-block">
+    ${items.map((label,i)=>`
+      <label class="wb-check-row">
+        <input type="checkbox" data-bilan6-idx="${i}" ${WB_DATA.bilanFinal[i]?'checked':''}>
+        <span class="wb-check-box">✓</span>
+        <span class="wb-label">${label}</span>
+      </label>
+    `).join('')}
+    </div>
+    <div class="wb-block-title" style="margin-top:10px;">Bilan <span class="wb-score" id="wbBilan6Score"></span></div>`;
+  updateBilan6Score();
+  container.querySelectorAll('input[data-bilan6-idx]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.bilanFinal[parseInt(inp.dataset.bilan6Idx)] = inp.checked;
+      updateBilan6Score();
+      saveWbData(); updateWbToc();
+    });
+  });
+}
+function updateBilan6Score(){
+  const score = WB_DATA.bilanFinal.filter(Boolean).length;
+  const el = document.getElementById('wbBilan6Score');
+  if(el) el.textContent = score + '/10';
+}
+
+const NIV6_SECTIONS = [
+  {id:'auditFlux', title:'Exercice — Audit de mes flux de revenus', render: renderNiv6Audit},
+  {id:'matrice', title:'Exercice — Ma matrice Effort / Impact', render: renderNiv6Matrice},
+  {id:'freinList', title:'Check-list — Ce qui freine mes flux', render: renderNiv6Frein},
+  {id:'marcheList', title:'Check-list — Ce qui fonctionne déjà', render: renderNiv6Marche},
+  {id:'planOptim', title:'Exercice — Mon plan d\u2019optimisation', render: renderNiv6PlanOptim},
+  {id:'rendement', title:'Rendement de mes flux', render: renderNiv6Rendement},
+  {id:'revueHebdo', title:'Ma revue hebdomadaire', render: renderNiv6Revue},
+  {id:'sprint21', title:'Sprint d\u2019optimisation — 21 jours', render: renderNiv6Sprint},
+  {id:'bilanFinal', title:'Bilan final — Prêt pour le Niveau 7 ?', render: renderNiv6Bilan},
+];
+function niv6SectionHasData(id){
+  switch(id){
+    case 'auditFlux': return WB_DATA.auditFlux.rows.length>0;
+    case 'matrice': return WB_DATA.matrice.rows.length>0;
+    case 'freinList': return WB_DATA.freinList.some(Boolean);
+    case 'marcheList': return WB_DATA.marcheList.some(Boolean);
+    case 'planOptim': return WB_DATA.planOptim.rows.length>0;
+    case 'rendement': return Object.values(WB_DATA.rendement).some(arr=>arr.some(v=>v && String(v).trim()));
+    case 'revueHebdo': return WB_DATA.revueHebdo.rows.length>0;
+    case 'sprint21': return WB_DATA.sprint21.some(row=>row.some(Boolean));
+    case 'bilanFinal': return WB_DATA.bilanFinal.some(Boolean);
+  }
+  return false;
+}
+function openWorkbook6(){
+  openWorkbookGeneric({
+    levelNum: 6,
+    defaultShape: NIV6_DEFAULT,
+    storageKey: NIV6_KEY,
+    lastSectionKey: NIV6_LAST_SECTION_KEY,
+    sections: NIV6_SECTIONS,
+    hasDataFn: niv6SectionHasData,
+    eyebrow: 'Niveau 6 · Optimiser tes Flux'
+  });
+}
+
+
+/* ========================================================================
+   NIVEAU 7 — "TRANSMETTRE ET MULTIPLIER" (9 exercices)
+   Suite logique du Niveau 6 : tes flux sont optimisés, ton système tourne.
+   Maintenant tu démultiplies en transmettant — à tes proches, ta communauté,
+   ou plus large. La transmission est le premier acte d'un héritage.
+   ======================================================================== */
+const NIV7_KEY = 'systemeInvisible_niveau7';
+const NIV7_LAST_SECTION_KEY = 'systemeInvisible_niveau7_lastSection';
+const NIV7_DEFAULT = {
+  inventaireSavoir: { rows: [] },
+  cercles: { famille:'', amis:'', communaute:'', public:'' },
+  preparerList: Array(10).fill(false),
+  planTransmission: { qui:'', quoi:'', format:'', quand:'' },
+  multiplier: { rows: [] },
+  systemeList: Array(8).fill(false),
+  impact: {
+    personnes:Array(12).fill(''), contenus:Array(12).fill(''), revenu:Array(12).fill('')
+  },
+  journal: { rows: [] },
+  bilanFinal: Array(10).fill(false)
+};
+
+function renderNiv7Inventaire(container){
+  container.innerHTML = `<p class="wb-intro">Ce que tu as appris a de la valeur pour quelqu'un d'autre, même si ça te semble évident. Liste tes leçons et compétences transmissibles.</p>
+    <div class="wb-table-wrap"><table class="wb-exp-table">
+      <thead><tr><th>Ce que je sais / j'ai appris</th><th>À qui ça pourrait servir</th><th>Déjà transmis ?</th><th></th></tr></thead>
+      <tbody id="wbSavoirBody"></tbody>
+    </table></div>
+    <button class="wb-btn" id="wbSavoirAdd" type="button">+ Ajouter une leçon</button>
+    <div class="wb-totals">
+      <div class="wb-total-item">Leçons identifiées<b id="wbSavoirTotal">0</b></div>
+      <div class="wb-total-item">Déjà transmises<b id="wbSavoirTransmis">0</b></div>
+    </div>`;
+  renderSavoirRows();
+  document.getElementById('wbSavoirAdd').addEventListener('click', ()=>{
+    WB_DATA.inventaireSavoir.rows.push({lecon:'', cible:'', transmis:false});
+    renderSavoirRows(); saveWbData(); updateWbToc();
+  });
+}
+function renderSavoirRows(){
+  const body = document.getElementById('wbSavoirBody');
+  if(!body) return;
+  body.innerHTML = WB_DATA.inventaireSavoir.rows.map((r,i)=>`
+    <tr data-i="${i}">
+      <td><input type="text" data-f="lecon" value="${escapeAttr(r.lecon)}" placeholder="ex : Gérer un budget, Déléguer…"></td>
+      <td><input type="text" data-f="cible" value="${escapeAttr(r.cible)}" placeholder="ex : Ma famille, mes clients…"></td>
+      <td style="text-align:center;"><input type="checkbox" data-f="transmis" ${r.transmis?'checked':''}></td>
+      <td><button class="wb-row-del" data-del="${i}" type="button">✕</button></td>
+    </tr>
+  `).join('') || `<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:16px;">Aucune leçon listée pour l'instant.</td></tr>`;
+  body.querySelectorAll('input').forEach(inp=>{
+    const handler = ()=>{
+      const tr = inp.closest('tr'); const i = parseInt(tr.dataset.i);
+      const val = inp.type==='checkbox' ? inp.checked : inp.value;
+      WB_DATA.inventaireSavoir.rows[i][inp.dataset.f] = val;
+      updateSavoirTotals(); saveWbData(); updateWbToc();
+    };
+    inp.addEventListener('input', handler);
+    inp.addEventListener('change', handler);
+  });
+  body.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      WB_DATA.inventaireSavoir.rows.splice(parseInt(btn.dataset.del),1);
+      renderSavoirRows(); saveWbData(); updateWbToc();
+    });
+  });
+  updateSavoirTotals();
+}
+function updateSavoirTotals(){
+  const total = WB_DATA.inventaireSavoir.rows.length;
+  const transmis = WB_DATA.inventaireSavoir.rows.filter(r=>r.transmis).length;
+  const tEl = document.getElementById('wbSavoirTotal'); if(tEl) tEl.textContent = total;
+  const trEl = document.getElementById('wbSavoirTransmis'); if(trEl) trEl.textContent = transmis;
+}
+
+function renderNiv7Cercles(container){
+  const fields = [
+    {key:'famille', label:'Ma famille — qu\u2019est-ce que je pourrais leur transmettre ?'},
+    {key:'amis', label:'Mes amis proches — qu\u2019est-ce que je pourrais leur transmettre ?'},
+    {key:'communaute', label:'Ma communauté / mon réseau — qu\u2019est-ce que je pourrais leur transmettre ?'},
+    {key:'public', label:'Un public plus large — qu\u2019est-ce que je pourrais transmettre à grande échelle ?'}
+  ];
+  container.innerHTML = `<p class="wb-intro">La transmission ne se fait pas de la même façon selon le cercle. Réfléchis à chacun.</p>
+  ${fields.map(f=>`
+    <div class="wb-field">
+      <label>${f.label}</label>
+      <textarea class="wb-textarea" data-cercle="${f.key}">${escapeHtml(WB_DATA.cercles[f.key])}</textarea>
+    </div>
+  `).join('')}`;
+  container.querySelectorAll('textarea[data-cercle]').forEach(ta=>{
+    ta.addEventListener('input', debounce(()=>{
+      WB_DATA.cercles[ta.dataset.cercle] = ta.value;
+      saveWbData(); updateWbToc();
+    }, 500));
+  });
+}
+
+function renderNiv7Preparer(container){
+  const items = ["Documenter un process que je maîtrise","Créer un support simple (écrit, vidéo, audio)","Simplifier mon message pour qu'il soit compréhensible par tous","Choisir un premier receveur pour tester ma transmission","Demander du feedback après une première transmission","Ajuster mon support selon les retours reçus","Prévoir un moment régulier dédié à transmettre","Accepter que ma façon de faire ne soit pas la seule valable","Célébrer les progrès de la personne que j'accompagne","Documenter ce qui fonctionne pour le refaire plus facilement"];
+  container.innerHTML = `<p class="wb-intro">Transmettre s'apprend et se prépare. Coche ce que tu mets en place.</p><div class="wb-block">
+  ${items.map((label,i)=>`
+    <label class="wb-check-row">
+      <input type="checkbox" data-prep-idx="${i}" ${WB_DATA.preparerList[i]?'checked':''}>
+      <span class="wb-check-box">✓</span>
+      <span class="wb-label">${label}</span>
+    </label>
+  `).join('')}
+  </div>`;
+  container.querySelectorAll('input[data-prep-idx]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.preparerList[parseInt(inp.dataset.prepIdx)] = inp.checked;
+      saveWbData(); updateWbToc();
+    });
+  });
+}
+
+function renderNiv7Plan(container){
+  const fields = [
+    {key:'qui', label:'Qui vais-je aider ou former en premier ?'},
+    {key:'quoi', label:'Que vais-je lui transmettre précisément ?'},
+    {key:'format', label:'Sous quelle forme ? (conversation, document, vidéo, formation…)'},
+    {key:'quand', label:'Quand est-ce que je m\u2019y engage à commencer ?'}
+  ];
+  container.innerHTML = `<p class="wb-intro">Un plan concret pour ton tout premier acte de transmission.</p>
+  ${fields.map(f=>`
+    <div class="wb-field">
+      <label>${f.label}</label>
+      <textarea class="wb-textarea" data-plan7="${f.key}">${escapeHtml(WB_DATA.planTransmission[f.key])}</textarea>
+    </div>
+  `).join('')}`;
+  container.querySelectorAll('textarea[data-plan7]').forEach(ta=>{
+    ta.addEventListener('input', debounce(()=>{
+      WB_DATA.planTransmission[ta.dataset.plan7] = ta.value;
+      saveWbData(); updateWbToc();
+    }, 500));
+  });
+}
+
+function renderNiv7Multiplier(container){
+  container.innerHTML = `<p class="wb-intro">Mesure l'effet réel de ce que tu transmets. La multiplication se voit dans le nombre de personnes touchées, pas dans tes intentions.</p>
+    <div class="wb-table-wrap"><table class="wb-exp-table">
+      <thead><tr><th>Action de transmission</th><th>Personnes touchées</th><th>Ça a porté ses fruits ?</th><th></th></tr></thead>
+      <tbody id="wbMultBody"></tbody>
+    </table></div>
+    <button class="wb-btn" id="wbMultAdd" type="button">+ Ajouter une action</button>
+    <div class="wb-totals">
+      <div class="wb-total-item">Total de personnes touchées<b id="wbMultTotal">0</b></div>
+    </div>`;
+  renderMultRows();
+  document.getElementById('wbMultAdd').addEventListener('click', ()=>{
+    WB_DATA.multiplier.rows.push({action:'', personnes:'', fruits:false});
+    renderMultRows(); saveWbData(); updateWbToc();
+  });
+}
+function renderMultRows(){
+  const body = document.getElementById('wbMultBody');
+  if(!body) return;
+  body.innerHTML = WB_DATA.multiplier.rows.map((r,i)=>`
+    <tr data-i="${i}">
+      <td><input type="text" data-f="action" value="${escapeAttr(r.action)}" placeholder="ex : Atelier, article, mentorat…"></td>
+      <td><input type="number" data-f="personnes" value="${escapeAttr(r.personnes)}" placeholder="0"></td>
+      <td style="text-align:center;"><input type="checkbox" data-f="fruits" ${r.fruits?'checked':''}></td>
+      <td><button class="wb-row-del" data-del="${i}" type="button">✕</button></td>
+    </tr>
+  `).join('') || `<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:16px;">Aucune action listée pour l'instant.</td></tr>`;
+  body.querySelectorAll('input').forEach(inp=>{
+    const handler = ()=>{
+      const tr = inp.closest('tr'); const i = parseInt(tr.dataset.i);
+      const val = inp.type==='checkbox' ? inp.checked : inp.value;
+      WB_DATA.multiplier.rows[i][inp.dataset.f] = val;
+      updateMultTotal(); saveWbData(); updateWbToc();
+    };
+    inp.addEventListener('input', handler);
+    inp.addEventListener('change', handler);
+  });
+  body.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      WB_DATA.multiplier.rows.splice(parseInt(btn.dataset.del),1);
+      renderMultRows(); saveWbData(); updateWbToc();
+    });
+  });
+  updateMultTotal();
+}
+function updateMultTotal(){
+  const total = WB_DATA.multiplier.rows.reduce((s,r)=>s+(parseFloat(r.personnes)||0),0);
+  const el = document.getElementById('wbMultTotal');
+  if(el) el.textContent = total;
+}
+
+function renderNiv7Systeme(container){
+  const items = ["Écrire mes process sous forme de guide simple","Créer des modèles ou templates réutilisables par d'autres","Enregistrer une explication une fois pour la réutiliser plusieurs fois","Former une personne capable de transmettre à sa place","Rendre mes outils accessibles à ceux que j'accompagne","Simplifier mon système pour qu'il soit compréhensible sans moi","Tester si quelqu'un d'autre peut suivre mon système seul","Prévoir une mise à jour régulière de ce que je transmets"];
+  container.innerHTML = `<p class="wb-intro">Un savoir qui ne dépend que de toi ne se transmet pas vraiment. Rends-le portable.</p><div class="wb-block">
+  ${items.map((label,i)=>`
+    <label class="wb-check-row">
+      <input type="checkbox" data-sys7-idx="${i}" ${WB_DATA.systemeList[i]?'checked':''}>
+      <span class="wb-check-box">✓</span>
+      <span class="wb-label">${label}</span>
+    </label>
+  `).join('')}
+  </div>`;
+  container.querySelectorAll('input[data-sys7-idx]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.systemeList[parseInt(inp.dataset.sys7Idx)] = inp.checked;
+      saveWbData(); updateWbToc();
+    });
+  });
+}
+
+function renderNiv7Impact(container){
+  const rows = [
+    {key:'personnes', label:'Personnes formées / aidées'},
+    {key:'contenus', label:'Contenus ou supports transmis'},
+    {key:'revenu', label:'Revenu généré par la transmission'}
+  ];
+  const months = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc'];
+  container.innerHTML = `<p class="wb-intro">Suis l'ampleur de ton impact, mois après mois.</p>
+    <div class="wb-dash-table-wrap"><table class="wb-dash-table">
+      <thead><tr><th>Indicateur</th>${months.map(m=>`<th>${m}</th>`).join('')}</tr></thead>
+      <tbody>
+        ${rows.map(r=>`
+          <tr>
+            <td>${r.label}</td>
+            ${months.map((m,mi)=>`<td><input type="text" data-imp-row="${r.key}" data-imp-m="${mi}" value="${escapeAttr(WB_DATA.impact[r.key][mi])}"></td>`).join('')}
+          </tr>
+        `).join('')}
+      </tbody>
+    </table></div>`;
+  container.querySelectorAll('input[data-imp-row]').forEach(inp=>{
+    inp.addEventListener('input', debounce(()=>{
+      WB_DATA.impact[inp.dataset.impRow][parseInt(inp.dataset.impM)] = inp.value;
+      saveWbData(); updateWbToc();
+    }, 400));
+  });
+}
+
+function renderNiv7Journal(container){
+  container.innerHTML = `<p class="wb-intro">Un journal simple de chaque moment de transmission — pour voir le chemin parcouru.</p>
+    <div class="wb-table-wrap"><table class="wb-exp-table">
+      <thead><tr><th>Date</th><th>À qui</th><th>Quoi</th><th>Résultat</th><th></th></tr></thead>
+      <tbody id="wbJournalBody"></tbody>
+    </table></div>
+    <button class="wb-btn" id="wbJournalAdd" type="button">+ Ajouter une entrée</button>`;
+  renderJournalRows();
+  document.getElementById('wbJournalAdd').addEventListener('click', ()=>{
+    WB_DATA.journal.rows.push({date:'', qui:'', quoi:'', resultat:''});
+    renderJournalRows(); saveWbData(); updateWbToc();
+  });
+}
+function renderJournalRows(){
+  const body = document.getElementById('wbJournalBody');
+  if(!body) return;
+  body.innerHTML = WB_DATA.journal.rows.map((r,i)=>`
+    <tr data-i="${i}">
+      <td><input type="text" data-f="date" value="${escapeAttr(r.date)}" placeholder="jj/mm"></td>
+      <td><input type="text" data-f="qui" value="${escapeAttr(r.qui)}" placeholder="…"></td>
+      <td><input type="text" data-f="quoi" value="${escapeAttr(r.quoi)}" placeholder="…"></td>
+      <td><input type="text" data-f="resultat" value="${escapeAttr(r.resultat)}" placeholder="…"></td>
+      <td><button class="wb-row-del" data-del="${i}" type="button">✕</button></td>
+    </tr>
+  `).join('') || `<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:16px;">Aucune entrée pour l'instant.</td></tr>`;
+  body.querySelectorAll('input').forEach(inp=>{
+    const handler = ()=>{
+      const tr = inp.closest('tr'); const i = parseInt(tr.dataset.i);
+      WB_DATA.journal.rows[i][inp.dataset.f] = inp.value;
+      saveWbData(); updateWbToc();
+    };
+    inp.addEventListener('input', handler);
+  });
+  body.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      WB_DATA.journal.rows.splice(parseInt(btn.dataset.del),1);
+      renderJournalRows(); saveWbData(); updateWbToc();
+    });
+  });
+}
+
+function renderNiv7Bilan(container){
+  const items = [
+    "J'ai identifié ce que je peux réellement transmettre.",
+    "J'ai transmis au moins une chose à au moins une personne.",
+    "J'ai un support qui me permet de transmettre sans tout refaire à chaque fois.",
+    "Mon système ne dépend plus uniquement de moi pour être compris.",
+    "Le nombre de personnes que je touche augmente.",
+    "Je mesure l'impact de ce que je transmets, pas juste l'intention.",
+    "Je reçois des retours qui confirment que ça change quelque chose.",
+    "Transmettre me demande de moins en moins d'effort à chaque fois.",
+    "Une partie de mon revenu vient maintenant de ce que je transmets.",
+    "Je suis prêt à avoir une vision globale de mon système (Niveau 8)."
+  ];
+  container.innerHTML = `<p class="wb-intro">Dernier point avant la suite. Coche ce qui est vrai aujourd'hui.</p>
+    <div class="wb-block">
+    ${items.map((label,i)=>`
+      <label class="wb-check-row">
+        <input type="checkbox" data-bilan7-idx="${i}" ${WB_DATA.bilanFinal[i]?'checked':''}>
+        <span class="wb-check-box">✓</span>
+        <span class="wb-label">${label}</span>
+      </label>
+    `).join('')}
+    </div>
+    <div class="wb-block-title" style="margin-top:10px;">Bilan <span class="wb-score" id="wbBilan7Score"></span></div>`;
+  updateBilan7Score();
+  container.querySelectorAll('input[data-bilan7-idx]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.bilanFinal[parseInt(inp.dataset.bilan7Idx)] = inp.checked;
+      updateBilan7Score();
+      saveWbData(); updateWbToc();
+    });
+  });
+}
+function updateBilan7Score(){
+  const score = WB_DATA.bilanFinal.filter(Boolean).length;
+  const el = document.getElementById('wbBilan7Score');
+  if(el) el.textContent = score + '/10';
+}
+
+const NIV7_SECTIONS = [
+  {id:'inventaireSavoir', title:'Exercice — Ce que je sais qui pourrait servir', render: renderNiv7Inventaire},
+  {id:'cercles', title:'Exercice — Mes cercles de transmission', render: renderNiv7Cercles},
+  {id:'preparerList', title:'Check-list — Préparer ma transmission', render: renderNiv7Preparer},
+  {id:'planTransmission', title:'Exercice — Mon premier acte de transmission', render: renderNiv7Plan},
+  {id:'multiplier', title:'Exercice — Effet multiplicateur', render: renderNiv7Multiplier},
+  {id:'systemeList', title:'Check-list — Rendre mon système transmissible', render: renderNiv7Systeme},
+  {id:'impact', title:'Suivi de mon impact', render: renderNiv7Impact},
+  {id:'journal', title:'Mon journal de transmission', render: renderNiv7Journal},
+  {id:'bilanFinal', title:'Bilan final — Prêt pour le Niveau 8 ?', render: renderNiv7Bilan},
+];
+function niv7SectionHasData(id){
+  switch(id){
+    case 'inventaireSavoir': return WB_DATA.inventaireSavoir.rows.length>0;
+    case 'cercles': return Object.values(WB_DATA.cercles).some(v=>v && v.trim());
+    case 'preparerList': return WB_DATA.preparerList.some(Boolean);
+    case 'planTransmission': return Object.values(WB_DATA.planTransmission).some(v=>v && v.trim());
+    case 'multiplier': return WB_DATA.multiplier.rows.length>0;
+    case 'systemeList': return WB_DATA.systemeList.some(Boolean);
+    case 'impact': return Object.values(WB_DATA.impact).some(arr=>arr.some(v=>v && String(v).trim()));
+    case 'journal': return WB_DATA.journal.rows.length>0;
+    case 'bilanFinal': return WB_DATA.bilanFinal.some(Boolean);
+  }
+  return false;
+}
+function openWorkbook7(){
+  openWorkbookGeneric({
+    levelNum: 7,
+    defaultShape: NIV7_DEFAULT,
+    storageKey: NIV7_KEY,
+    lastSectionKey: NIV7_LAST_SECTION_KEY,
+    sections: NIV7_SECTIONS,
+    hasDataFn: niv7SectionHasData,
+    eyebrow: 'Niveau 7 · Transmettre et Multiplier'
+  });
+}
+
 
 
 
