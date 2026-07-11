@@ -541,6 +541,11 @@ body.reader-active .mobile-menu{display:none!important;}
 .pack .p-sub{font-family:var(--f-mono);font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--blue-glow);margin:4px 0 20px;}
 .pack.featured .p-sub{color:var(--gold);}
 .pack .p-price{font-family:var(--f-display);font-size:2.6rem;font-weight:700;color:var(--gold);margin-bottom:6px;}
+.pack .p-price-row{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px;}
+.pack .p-price-row .p-price{margin-bottom:0;}
+.pack .p-price-old{font-family:var(--f-body);font-size:1.15rem;color:var(--muted);text-decoration:line-through;text-decoration-color:rgba(232,168,92,.5);}
+.pack .p-save{font-family:var(--f-mono);font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-soft);
+  background:rgba(212,169,78,.12);border:1px solid rgba(212,169,78,.35);border-radius:99px;padding:4px 11px;}
 .pack ul{list-style:none;margin:20px 0 30px;flex:1;}
 .pack li{font-size:.9rem;color:var(--muted);padding:7px 0;display:flex;gap:10px;}
 .pack li::before{content:'✓';color:var(--gold);font-weight:700;}
@@ -1123,7 +1128,11 @@ footer a:hover{color:var(--ink);}
       <div class="pack">
         <h3>Pack Découverte</h3>
         <div class="p-sub">Livre + Niveau 0</div>
-        <div class="p-price">49 €</div>
+        <div class="p-price-row">
+          <div class="p-price">49 €</div>
+          <span class="p-price-old">76,99 €</span>
+          <span class="p-save">- 27,99 € (-36 %)</span>
+        </div>
         <ul>
           <li>Livre &quot;Système Invisible&quot; (ebook)</li>
           <li>Niveau 0</li>
@@ -1138,7 +1147,11 @@ footer a:hover{color:var(--ink);}
         <div class="flag">Offre recommandée</div>
         <h3>Pack Évolution</h3>
         <div class="p-sub">Livre + Niveaux 0 à 5</div>
-        <div class="p-price">369 €</div>
+        <div class="p-price-row">
+          <div class="p-price">369 €</div>
+          <span class="p-price-old">421,99 €</span>
+          <span class="p-save">- 52,99 € (-13 %)</span>
+        </div>
         <ul>
           <li>Livre &quot;Système Invisible&quot; (ebook)</li>
           <li>Niveaux 0 à 5</li>
