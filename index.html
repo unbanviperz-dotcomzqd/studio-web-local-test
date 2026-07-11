@@ -33,31 +33,19 @@
 html{scroll-behavior:smooth;}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);overflow-x:hidden;line-height:1.65;}
 
-/* ===== FOND : VILLE / LIGNES / TUNNEL ===== */
+/* ===== FOND ===== */
 .bg-scene{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
-.stars{position:absolute;inset:0;background-image:
-  radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,.5) 0, transparent 100%),
-  radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,.4) 0, transparent 100%),
-  radial-gradient(1.5px 1.5px at 80% 20%, rgba(96,165,250,.6) 0, transparent 100%),
-  radial-gradient(1px 1px at 40% 80%, rgba(255,255,255,.3) 0, transparent 100%),
-  radial-gradient(1px 1px at 90% 60%, rgba(212,169,78,.5) 0, transparent 100%),
-  radial-gradient(1.5px 1.5px at 10% 90%, rgba(96,165,250,.4) 0, transparent 100%);
-  background-size:600px 600px;opacity:.8;}
-.tunnel-grid{position:absolute;left:50%;top:58%;width:220vmax;height:220vmax;
-  transform:translate(-50%,-50%) perspective(600px) rotateX(72deg);
-  background-image:
-    linear-gradient(rgba(59,130,246,.13) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(59,130,246,.13) 1px, transparent 1px);
-  background-size:70px 70px;
-  mask-image:radial-gradient(ellipse at center, black 0%, transparent 60%);
-  -webkit-mask-image:radial-gradient(ellipse at center, black 0%, transparent 60%);}
-.net{position:absolute;inset:0;}
-.net svg{width:100%;height:100%;opacity:.35;}
-.net line{stroke:url(#lg);stroke-width:1;}
-.net circle{fill:var(--blue-glow);}
 .glow-orb{position:absolute;border-radius:50%;filter:blur(90px);opacity:.22;}
 .glow-orb.b{width:520px;height:520px;background:var(--blue);top:-160px;right:-120px;}
 .glow-orb.g{width:420px;height:420px;background:var(--gold);bottom:-140px;left:-120px;opacity:.12;}
+
+/* ===== FOND : CHEMIN SINUEUX + DÉCORS NATURE (scrolle avec la page) ===== */
+.bg-decor{position:absolute;top:0;left:0;width:100%;z-index:0;pointer-events:none;overflow:hidden;}
+.bg-decor svg{display:block;width:100%;height:100%;}
+.bg-decor .path-main{fill:none;stroke-linecap:round;stroke:url(#pathGrad);}
+.bg-decor .path-edge{fill:none;stroke-linecap:round;stroke-dasharray:1 14;}
+.bg-decor .deco{opacity:.14;}
+.bg-decor .deco-line{fill:none;stroke-linecap:round;stroke-linejoin:round;}
 
 main,header,footer{position:relative;z-index:1;}
 
@@ -598,24 +586,11 @@ footer a:hover{color:var(--ink);}
 <body class="no-js">
 
 <div class="bg-scene">
-  <div class="stars"></div>
-  <div class="net">
-    <svg viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-      <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#3b82f6" stop-opacity=".5"/><stop offset="1" stop-color="#d4a94e" stop-opacity=".25"/>
-      </linearGradient></defs>
-      <line x1="120" y1="180" x2="420" y2="90"/><line x1="420" y1="90" x2="760" y2="220"/>
-      <line x1="760" y1="220" x2="1080" y2="140"/><line x1="240" y1="560" x2="560" y2="640"/>
-      <line x1="560" y1="640" x2="900" y2="520"/><line x1="120" y1="180" x2="240" y2="560"/>
-      <line x1="760" y1="220" x2="900" y2="520"/>
-      <circle cx="120" cy="180" r="3"/><circle cx="420" cy="90" r="3"/><circle cx="760" cy="220" r="3"/>
-      <circle cx="1080" cy="140" r="3"/><circle cx="240" cy="560" r="3"/><circle cx="560" cy="640" r="3"/><circle cx="900" cy="520" r="3"/>
-    </svg>
-  </div>
-  <div class="tunnel-grid" id="tunnelGrid"></div>
   <div class="glow-orb b"></div>
   <div class="glow-orb g"></div>
 </div>
+
+<div class="bg-decor" id="bgDecor"><svg id="bgDecorSvg" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" aria-hidden="true"></svg></div>
 
 <!-- NAV -->
 <header class="nav">
@@ -1505,18 +1480,7 @@ document.getElementById('finResetBtn').addEventListener('click', ()=>{
 loadFinDashboard();
 calcFinDashboard();
 
-const grid = document.getElementById('tunnelGrid');
-let ticking=false;
-window.addEventListener('scroll',()=>{
-  if(!ticking){
-    requestAnimationFrame(()=>{
-      const y = window.scrollY*0.12;
-      grid.style.backgroundPosition = `0 ${y}px, ${y*0.4}px 0`;
-      ticking=false;
-    });
-    ticking=true;
-  }
-},{passive:true});
+const grid = null;
 
 /* ===== NIVEAUX : données, grille, modal ===== */
 const LEVELS = [
@@ -1831,6 +1795,111 @@ planForm.addEventListener('submit', e=>{
   planForm.reset();
   showToast('<b>Inscription enregistrée</b><br><span style="color:var(--muted);font-size:.8em;">L\'envoi automatique par email sera branché plus tard.</span>');
 });
+
+/* ===== Génération du fond : chemin sinueux + décors nature discrets ===== */
+(function(){
+  const W = 1440;
+  const svg = document.getElementById('bgDecorSvg');
+  const wrap = document.getElementById('bgDecor');
+  if(!svg || !wrap) return;
+
+  function seeded(seed){ let s = seed; return function(){ s = (s*9301+49297)%233280; return s/233280; }; }
+  const rnd = seeded(42);
+
+  function mountainSVG(x,y,scale,flip){
+    const s = scale, f = flip ? -1 : 1;
+    return `<g class="deco" transform="translate(${x},${y}) scale(${f*s},${s})">
+      <path class="deco-line" d="M0,60 L35,10 L58,38 L90,-25 L128,60 Z" stroke="var(--blue-glow)" stroke-width="1.4"/>
+      <path class="deco-line" d="M40,60 L70,20 L95,45 L140,-8 L172,60 Z" stroke="var(--gold)" stroke-width="1.2" opacity=".7"/>
+    </g>`;
+  }
+  function forestSVG(x,y,scale){
+    const s = scale;
+    let g = `<g class="deco" transform="translate(${x},${y}) scale(${s})">`;
+    for(let i=0;i<5;i++){
+      const px = i*22, h = 34 + (i%2)*10;
+      g += `<path class="deco-line" d="M${px+11},0 L${px+22},${h*0.55} L${px+16},${h*0.55} L${px+22},${h} L${px},${h} L${px+6},${h*0.55} L${px},${h*0.55} Z" stroke="var(--gold-soft)" stroke-width="1"/>`;
+    }
+    g += `</g>`;
+    return g;
+  }
+  function treeSVG(x,y,scale){
+    const s = scale;
+    return `<g class="deco" transform="translate(${x},${y}) scale(${s})">
+      <path class="deco-line" d="M14,0 L24,20 L18,20 L26,36 L2,36 L10,20 L4,20 Z" stroke="var(--gold-soft)" stroke-width="1"/>
+      <line class="deco-line" x1="14" y1="36" x2="14" y2="46" stroke="var(--gold-soft)" stroke-width="1.4"/>
+    </g>`;
+  }
+  function riverSVG(x,y,scale,width){
+    const s = scale, w = width || 260;
+    let d = `M0,0`;
+    for(let i=1;i<=6;i++){
+      const dx = (w/6)*i, dy = Math.sin(i*1.1)*18;
+      d += ` Q${dx-w/12},${dy-14} ${dx},${dy}`;
+    }
+    return `<g class="deco" transform="translate(${x},${y}) scale(${s})">
+      <path class="deco-line" d="${d}" stroke="var(--blue-glow)" stroke-width="2"/>
+    </g>`;
+  }
+  function lakeSVG(x,y,scale){
+    const s = scale;
+    return `<g class="deco" transform="translate(${x},${y}) scale(${s})">
+      <ellipse cx="60" cy="20" rx="70" ry="16" fill="none" stroke="var(--blue-glow)" stroke-width="1.3"/>
+      <path class="deco-line" d="M10,20 Q60,8 110,20" stroke="var(--blue-glow)" stroke-width="1"/>
+      <path class="deco-line" d="M20,28 Q60,18 100,28" stroke="var(--gold)" stroke-width="1" opacity=".6"/>
+    </g>`;
+  }
+  const DECOS = [mountainSVG, forestSVG, riverSVG, lakeSVG, treeSVG];
+
+  function build(){
+    const footer = document.querySelector('footer');
+    const H = footer ? Math.round(footer.getBoundingClientRect().top + window.scrollY) : Math.max(document.body.scrollHeight, document.documentElement.scrollHeight, window.innerHeight);
+    wrap.style.height = H + 'px';
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.setAttribute('width', W);
+    svg.setAttribute('height', H);
+
+    /* chemin sinueux unique, ample et irrégulier, façon route qui traverse tout le site */
+    const step = 26;
+    let cx = W * (0.22 + rnd()*0.1);
+    let path = `M${cx.toFixed(1)},0`;
+    let wob1 = rnd()*1000, wob2 = rnd()*1000;
+    for(let y=step; y<=H; y+=step){
+      const x = W*0.5 + Math.sin(y/560 + wob1)*W*0.30 + Math.sin(y/210 + wob2)*W*0.09;
+      path += ` L${x.toFixed(1)},${y}`;
+    }
+
+    let decor = '';
+    const slots = Math.max(6, Math.floor(H / 650));
+    for(let i=0;i<slots;i++){
+      const y = 260 + i * (H - 500) / slots + rnd()*160;
+      const side = rnd() > 0.5;
+      const x = side ? (W*0.58 + rnd()*W*0.26) : (rnd()*W*0.18);
+      const pick = DECOS[Math.floor(rnd()*DECOS.length)];
+      const scale = 0.75 + rnd()*0.75;
+      decor += pick(x, y, scale);
+    }
+
+    svg.innerHTML = `
+      <defs>
+        <linearGradient id="pathGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#d4a94e" stop-opacity=".08"/>
+          <stop offset=".18" stop-color="#e8c87a" stop-opacity=".5"/>
+          <stop offset=".5" stop-color="#60a5fa" stop-opacity=".38"/>
+          <stop offset=".82" stop-color="#e8c87a" stop-opacity=".5"/>
+          <stop offset="1" stop-color="#d4a94e" stop-opacity=".08"/>
+        </linearGradient>
+      </defs>
+      <path class="path-main" d="${path}" stroke-width="3"/>
+      <path class="path-edge" d="${path}" stroke="var(--gold-soft)" stroke-width="1" opacity=".35"/>
+      ${decor}
+    `;
+  }
+
+  window.addEventListener('load', ()=>{ build(); setTimeout(build, 800); });
+  window.addEventListener('resize', ()=>{ clearTimeout(window._bgDecorT); window._bgDecorT = setTimeout(build, 250); });
+  build();
+})();
 </script>
 </body>
 </html>
