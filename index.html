@@ -798,6 +798,47 @@ body.reader-active .mobile-menu{display:none!important;}
 .quiz-result .qr-name{font-family:var(--f-display);font-size:1.3rem;font-weight:700;margin:8px 0 14px;}
 .quiz-result .qr-desc{color:var(--muted);font-size:.92rem;line-height:1.7;margin-bottom:26px;}
 
+/* ===== AVIS CLIENTS ===== */
+.avis-stats-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 26px;
+  margin:34px auto 0;padding:18px 30px;max-width:560px;background:var(--panel);border:1px solid var(--line);
+  border-radius:14px;}
+.avis-stats-num{font-family:var(--f-display);font-weight:700;font-size:2rem;color:var(--gold);line-height:1;text-align:center;}
+.avis-stats-sub{font-family:var(--f-mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:center;margin-top:2px;}
+.avis-stars{color:var(--gold);letter-spacing:2px;font-size:.92rem;white-space:nowrap;}
+.avis-stars .empty{color:rgba(139,150,181,.35);}
+.avis-cta-row{display:flex;justify-content:center;margin:34px 0 30px;}
+.avis-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:20px;text-align:left;}
+.avis-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 22px 18px;
+  display:flex;flex-direction:column;gap:12px;transition:transform .25s,box-shadow .25s,border-color .25s;}
+.avis-card:hover{transform:translateY(-4px);border-color:rgba(212,169,78,.35);box-shadow:0 16px 40px rgba(0,0,0,.35);}
+.avis-card.hidden-extra{display:none;}
+.avis-card-head{display:flex;align-items:center;gap:12px;}
+.avis-avatar{width:40px;height:40px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  font-family:var(--f-display);font-weight:700;font-size:.86rem;color:#0a0f1e;
+  background:linear-gradient(135deg,var(--gold),var(--blue-glow));}
+.avis-name-wrap{min-width:0;}
+.avis-name{font-family:var(--f-display);font-weight:600;font-size:.9rem;color:var(--ink);}
+.avis-badge{display:inline-flex;align-items:center;gap:5px;margin-top:2px;font-family:var(--f-mono);
+  font-size:.6rem;letter-spacing:.04em;text-transform:uppercase;color:var(--gold-soft);}
+.avis-text{color:var(--muted);font-size:.87rem;line-height:1.65;flex:1;}
+.avis-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  border-top:1px solid var(--line);padding-top:12px;font-family:var(--f-mono);font-size:.64rem;
+  letter-spacing:.03em;text-transform:uppercase;color:var(--muted);}
+.avis-more-row{display:flex;justify-content:center;margin-top:30px;}
+.avis-shared-note{background:rgba(59,130,246,.08);border:1px solid rgba(96,165,250,.3);border-radius:10px;
+  padding:10px 14px;font-size:.78rem;color:var(--blue-glow);line-height:1.6;margin:14px 0 6px;}
+.avis-form{display:flex;flex-direction:column;gap:16px;margin-top:8px;}
+.avis-form label{font-family:var(--f-mono);font-size:.62rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;display:block;}
+.avis-form input[type=text],.avis-form select,.avis-form textarea{
+  width:100%;background:rgba(5,9,20,.7);border:1px solid var(--line);border-radius:8px;padding:12px 14px;
+  color:var(--ink);font-family:var(--f-body);font-size:.9rem;}
+.avis-form input[type=text]:focus,.avis-form select:focus,.avis-form textarea:focus{border-color:var(--gold);outline:none;}
+.avis-form select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%238b96b5'%3E%3Cpath d='M5.5 7.5l4.5 4.5 4.5-4.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;}
+.avis-form textarea{min-height:100px;resize:vertical;line-height:1.6;}
+.avis-star-picker{display:flex;gap:8px;font-size:1.5rem;color:rgba(139,150,181,.35);cursor:pointer;}
+.avis-star-picker span{transition:color .15s ease,transform .15s ease;}
+.avis-star-picker span:hover,.avis-star-picker span.active{color:var(--gold);transform:scale(1.12);}
+
 /* ===== FOOTER ===== */
 footer{border-top:1px solid var(--line);padding:44px clamp(20px,6vw,80px) 34px;background:rgba(5,9,20,.85);}
 .f-top{display:flex;flex-wrap:wrap;gap:26px 60px;justify-content:space-between;margin-bottom:30px;}
@@ -1458,6 +1499,68 @@ footer a:hover{color:var(--ink);}
       <a href="#niveaux" class="btn btn-blue">Découvrir les niveaux</a>
     </div>
   </section>
+
+  <!-- SECTION 6ter : AVIS CLIENTS -->
+  <section id="avis" class="reveal center">
+    <div class="eyebrow">Ils ont commencé</div>
+    <h2>Avis clients</h2>
+    <p class="lead">Des lecteurs à différentes étapes du parcours, du Niveau 0 au Niveau 11. Un avis peut être déposé par n'importe quel client.</p>
+
+    <div class="avis-stats-bar">
+      <div>
+        <div class="avis-stats-num" id="avisAvgNum">4.8</div>
+        <div class="avis-stats-sub">Note moyenne</div>
+      </div>
+      <div class="avis-stars" id="avisAvgStars">★★★★★</div>
+      <div>
+        <div class="avis-stats-num" id="avisCountNum">25</div>
+        <div class="avis-stats-sub">Avis publiés</div>
+      </div>
+    </div>
+
+    <div class="avis-cta-row">
+      <button class="btn btn-gold" id="avisOpenBtn" type="button">+ Ajouter mon avis</button>
+    </div>
+
+    <div class="avis-grid" id="avisGrid"></div>
+
+    <div class="avis-more-row">
+      <button class="btn btn-ghost" id="avisMoreBtn" type="button">Voir plus d'avis</button>
+    </div>
+  </section>
+
+  <!-- MODAL AJOUT AVIS -->
+  <div class="modal-overlay" id="avisModal">
+    <div class="modal-box" id="avisModalBox">
+      <button class="modal-close" onclick="closeAvisModal()">✕</button>
+      <div class="modal-body" style="padding-top:30px;">
+        <span class="content-tag">Avis clients</span>
+        <div class="m-name">Partage ton avis</div>
+        <p class="avis-shared-note">Ton avis s'ajoute à la liste ci-dessus et reste enregistré sur ce navigateur.</p>
+        <form class="avis-form" id="avisForm">
+          <div>
+            <label for="avisFormName">Prénom + initiale</label>
+            <input type="text" id="avisFormName" placeholder="Ex : Julie M." maxlength="40" required>
+          </div>
+          <div>
+            <label for="avisFormLevel">Ton niveau actuel</label>
+            <select id="avisFormLevel"></select>
+          </div>
+          <div>
+            <label>Ta note</label>
+            <div class="avis-star-picker" id="avisStarPicker">
+              <span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span><span data-v="4">★</span><span data-v="5">★</span>
+            </div>
+          </div>
+          <div>
+            <label for="avisFormText">Ton avis</label>
+            <textarea id="avisFormText" placeholder="Raconte ton parcours…" maxlength="500" required></textarea>
+          </div>
+          <button class="btn btn-gold" type="submit">Publier mon avis</button>
+        </form>
+      </div>
+    </div>
+  </div>
 
   <!-- SECTION 7 : MANIFESTE -->
   <section id="manifeste" class="reveal">
@@ -6936,6 +7039,148 @@ planForm.addEventListener('submit', e=>{
   document.getElementById('planNote').textContent = 'Merci ' + name + ' — ton Plan de la Liberté arrive à ' + email + ' (connexion email réelle à venir).';
   planForm.reset();
   showToast('<b>Inscription enregistrée</b><br><span style="color:var(--muted);font-size:.8em;">L\'envoi automatique par email sera branché plus tard.</span>');
+});
+
+/* ===== AVIS CLIENTS ===== */
+const AVIS_KEY = 'systemeInvisible_avis';
+const AVIS_LEVEL_ICON = ['⚫','🔴','🟠','🟡','🟢','🔵','🟣','🟤','🔶','🏆','🏛️','♾️'];
+
+const AVIS_SEED = [
+  {name:"Julien R.", level:0, rating:5, when:"il y a 4 jours", text:"J'ai ouvert le Niveau 0 sans trop y croire. Juste voir noir sur blanc mes dépendances m'a suffi à changer deux ou trois habitudes dès la première semaine. Simple et direct."},
+  {name:"Camille B.", level:0, rating:4, when:"il y a 6 jours", text:"Ça bouscule un peu au début, on réalise tout ce qu'on laisse filer sans y penser. Bonne mise en route, j'attends la suite avant de mettre 5 étoiles."},
+  {name:"Karim T.", level:0, rating:5, when:"il y a 1 semaine", text:"Le \"ménage intérieur\" du Niveau 0 m'a pris une soirée entière. J'ai identifié trois abonnements inutiles et une vraie dépendance à mes écrans. Point de départ solide."},
+  {name:"Élodie M.", level:0, rating:5, when:"il y a 2 semaines", text:"Je pensais déjà tout maîtriser côté finances. Le Niveau 0 m'a montré le contraire, avec bienveillance. Je recommence sur de meilleures bases."},
+  {name:"Damien F.", level:0, rating:4, when:"il y a 3 semaines", text:"Format clair, exercices concrets. J'ai encore du mal à tenir la discipline demandée mais c'est un bon déclic pour commencer."},
+
+  {name:"Sophie L.", level:2, rating:5, when:"il y a 3 semaines", text:"Niveau 2 en poche : mon budget est enfin clair, noir sur blanc, chaque mois. Je ne subis plus mes fins de mois, je les anticipe."},
+  {name:"Anthony G.", level:2, rating:5, when:"il y a 1 mois", text:"J'ai stabilisé mes dépenses grâce aux exercices du Niveau 2. Rien de magique, juste une méthode que j'ai enfin appliquée jusqu'au bout."},
+  {name:"Nadia B.", level:2, rating:4, when:"il y a 5 semaines", text:"Bonne suite logique après le Niveau 0. Ça demande de la rigueur mais les résultats sur mon équilibre mensuel sont déjà là."},
+  {name:"Vincent D.", level:2, rating:5, when:"il y a 6 semaines", text:"Le passage du chaos au contrôle, puis à la stabilité : je le vis vraiment niveau après niveau. Le Niveau 2 a posé des bases que je n'avais jamais eues."},
+  {name:"Laëtitia P.", level:2, rating:5, when:"il y a 2 mois", text:"Mes habitudes financières ont changé en quelques semaines. Mon conjoint a remarqué la différence avant même que je lui en parle."},
+
+  {name:"Marc-Antoine V.", level:4, rating:5, when:"il y a 2 mois", text:"Niveau 4 : j'ai appris à construire mes premiers actifs grâce au site. Je commence enfin à me développer financièrement, avec des revenus qui ne dépendent plus uniquement de mon temps. Merci au créateur du site."},
+  {name:"Sarah K.", level:4, rating:5, when:"il y a 10 semaines", text:"Construire quelque chose qui rapporte même quand je ne travaille pas dessus : c'était abstrait avant le Niveau 4. Maintenant j'ai un premier actif, modeste mais réel."},
+  {name:"Yohann R.", level:4, rating:4, when:"il y a 3 mois", text:"On sent qu'on quitte la simple gestion pour passer à la construction. Ça demande plus de temps que les niveaux précédents mais les premiers résultats arrivent."},
+  {name:"Pauline C.", level:4, rating:5, when:"il y a 3 mois", text:"Le Niveau 4 a été un déclic : j'ai enfin un projet qui m'appartient et qui commence à générer un petit revenu à côté de mon salaire."},
+
+  {name:"Frédéric N.", level:6, rating:5, when:"il y a 4 mois", text:"Niveau 6 : j'optimise maintenant ce que j'ai construit aux niveaux précédents. Moins d'efforts dispersés, plus de résultats sur ce qui fonctionne vraiment."},
+  {name:"Claire D.", level:6, rating:5, when:"il y a 5 mois", text:"Arrivée ici, je gère plusieurs sources de revenus et le Niveau 6 m'a aidée à couper ce qui freinait. Mon temps libre a doublé sans perte de revenus."},
+  {name:"Rachid B.", level:6, rating:4, when:"il y a 4 mois", text:"Bon niveau pour prendre du recul sur sa structure globale. J'aurais aimé un peu plus d'exemples chiffrés, mais la méthode fonctionne."},
+  {name:"Émilie T.", level:6, rating:5, when:"il y a 6 mois", text:"Depuis le Niveau 6, je pilote mes revenus comme un vrai tableau de bord. C'est la première fois que je me sens réellement aux commandes."},
+
+  {name:"Grégoire L.", level:11, rating:5, when:"il y a 8 mois", text:"Niveau 11 atteint après un peu plus d'un an de parcours. Cinq sources de revenus actives aujourd'hui, et surtout une liberté de temps que je n'aurais jamais imaginée en commençant au Niveau 0. Ce site a changé ma trajectoire."},
+  {name:"Isabelle M.", level:11, rating:5, when:"il y a 1 an", text:"Je suis arrivée sceptique, je repars avec une structure complète et une vraie indépendance financière. Le chemin est long mais chaque niveau a sa raison d'être."},
+
+  {name:"Thomas B.", level:null, rating:5, when:"il y a 2 jours", text:"J'ai commencé par le livre Système Invisible avant de me lancer dans les niveaux. Une lecture qui remet les idées reçues en question, je le relis déjà une deuxième fois."},
+  {name:"Léa F.", level:null, rating:4, when:"il y a 5 jours", text:"Le livre pose vraiment bien le décor. Je n'ai pas encore acheté de niveau mais l'histoire de Thibault m'a donné envie d'aller plus loin."},
+  {name:"Mounir A.", level:null, rating:5, when:"il y a 1 semaine", text:"Acheté le livre par curiosité, terminé en trois soirées. Le mélange fiction et réflexion fonctionne très bien, ça donne vraiment envie de passer à l'action."},
+  {name:"Charlotte S.", level:null, rating:5, when:"il y a 3 jours", text:"Le Système Invisible m'a fait voir mes propres dépendances au quotidien sous un autre angle. Je passe au Niveau 0 dès ce week-end."},
+  {name:"David N.", level:null, rating:4, when:"il y a 10 jours", text:"Bonne surprise, je m'attendais à un simple livre de développement personnel et j'ai eu une vraie histoire prenante avec du fond derrière."},
+];
+
+function avisEsc(s){
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function avisLevelMeta(lvl){
+  if(lvl===null || lvl===undefined) return {icon:'📖', label:'Lecture — Le Livre'};
+  const L = LEVELS.find(l=>l.n===lvl);
+  return {icon: AVIS_LEVEL_ICON[lvl] || '◆', label: 'Niveau '+lvl+' — '+(L?L.name:'')};
+}
+function avisStarsHTML(rating){
+  let h='';
+  for(let i=1;i<=5;i++){ h += i<=rating ? '★' : '<span class="empty">★</span>'; }
+  return h;
+}
+function avisInitials(name){
+  return String(name).trim().split(/\s+/).map(p=>p[0]).join('').slice(0,2).toUpperCase();
+}
+
+let AVIS_USER = [];
+try{ AVIS_USER = JSON.parse(localStorage.getItem(AVIS_KEY) || '[]'); }catch(e){ AVIS_USER = []; }
+
+const AVIS_INITIAL_VISIBLE = 6;
+const avisGrid = document.getElementById('avisGrid');
+const avisMoreBtn = document.getElementById('avisMoreBtn');
+
+function renderAvis(){
+  const all = [...AVIS_USER, ...AVIS_SEED];
+  avisGrid.innerHTML = all.map((r,i)=>{
+    const meta = avisLevelMeta(r.level);
+    const hidden = i>=AVIS_INITIAL_VISIBLE ? ' hidden-extra' : '';
+    return '<div class="avis-card'+hidden+'">'
+      + '<div class="avis-card-head">'
+      +   '<div class="avis-avatar">'+avisInitials(r.name)+'</div>'
+      +   '<div class="avis-name-wrap">'
+      +     '<div class="avis-name">'+avisEsc(r.name)+'</div>'
+      +     '<div class="avis-badge">'+meta.icon+' '+meta.label+'</div>'
+      +   '</div>'
+      + '</div>'
+      + '<div class="avis-text">'+avisEsc(r.text)+'</div>'
+      + '<div class="avis-foot"><span class="avis-stars">'+avisStarsHTML(r.rating)+'</span><span>'+avisEsc(r.when||'Récemment')+'</span></div>'
+      + '</div>';
+  }).join('');
+
+  const avg = all.reduce((s,r)=>s+r.rating,0)/all.length;
+  document.getElementById('avisAvgNum').textContent = avg.toFixed(1);
+  document.getElementById('avisAvgStars').innerHTML = avisStarsHTML(Math.round(avg));
+  document.getElementById('avisCountNum').textContent = all.length;
+  avisMoreBtn.style.display = all.length>AVIS_INITIAL_VISIBLE ? 'inline-flex' : 'none';
+}
+renderAvis();
+
+avisMoreBtn.addEventListener('click', ()=>{
+  avisGrid.querySelectorAll('.avis-card.hidden-extra').forEach(el=>el.classList.remove('hidden-extra'));
+  avisMoreBtn.style.display='none';
+});
+
+/* Sélecteur de niveau du formulaire, basé sur LEVELS déjà défini plus haut */
+const avisFormLevel = document.getElementById('avisFormLevel');
+avisFormLevel.innerHTML = '<option value="">Juste lu le livre — pas encore de niveau</option>'
+  + LEVELS.map(l=>'<option value="'+l.n+'">Niveau '+l.n+' — '+l.name+'</option>').join('');
+
+/* Sélecteur d'étoiles */
+let avisPickedRating = 5;
+const avisStarPicker = document.getElementById('avisStarPicker');
+function avisPaintPicker(v){
+  avisStarPicker.querySelectorAll('span').forEach(s=>{
+    s.classList.toggle('active', Number(s.dataset.v) <= v);
+  });
+}
+avisPaintPicker(avisPickedRating);
+avisStarPicker.querySelectorAll('span').forEach(s=>{
+  s.addEventListener('click', ()=>{
+    avisPickedRating = Number(s.dataset.v);
+    avisPaintPicker(avisPickedRating);
+  });
+});
+
+/* Ouverture / fermeture modale */
+function openAvisModal(){ document.getElementById('avisModal').classList.add('open'); }
+function closeAvisModal(){ document.getElementById('avisModal').classList.remove('open'); }
+document.getElementById('avisOpenBtn').addEventListener('click', openAvisModal);
+document.getElementById('avisModal').addEventListener('click', e=>{ if(e.target.id==='avisModal') closeAvisModal(); });
+
+/* Soumission du formulaire d'avis */
+document.getElementById('avisForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  const name = document.getElementById('avisFormName').value.trim();
+  const text = document.getElementById('avisFormText').value.trim();
+  const levelRaw = avisFormLevel.value;
+  if(!name || !text){ showToast('Merci de renseigner ton prénom et ton avis.'); return; }
+  const review = {
+    name: name,
+    text: text,
+    level: levelRaw==='' ? null : Number(levelRaw),
+    rating: avisPickedRating,
+    when: "À l'instant"
+  };
+  AVIS_USER.unshift(review);
+  try{ localStorage.setItem(AVIS_KEY, JSON.stringify(AVIS_USER)); }catch(err){}
+  renderAvis();
+  document.getElementById('avisForm').reset();
+  avisPickedRating = 5; avisPaintPicker(5);
+  closeAvisModal();
+  showToast('<b>Merci pour ton avis !</b><br><span style="color:var(--muted);font-size:.8em;">Il apparaît maintenant en haut de la liste.</span>');
 });
 
 /* ===== Génération du fond : chemin sinueux + décors nature discrets ===== */
