@@ -384,6 +384,8 @@ h2{font-size:clamp(1.7rem,4.2vw,2.8rem);margin-bottom:16px;}
 
 /* ===== LECTEUR EBOOK "SYSTÈME INVISIBLE" ===== */
 .reader-overlay{align-items:center;}
+body.reader-active .nav,
+body.reader-active .mobile-menu{display:none!important;}
 .reader-box{position:relative;width:min(1180px,95vw);height:min(88vh,900px);background:var(--panel);
   border:1px solid var(--line);border-radius:18px;box-shadow:0 40px 120px rgba(0,0,0,.7);
   overflow:hidden;display:flex;flex-direction:column;}
@@ -1927,10 +1929,12 @@ function openBookReader(){
   if(!BOOK_SI.find(c=>c.id===lastId)) lastId = 'intro';
   renderBookChapter(lastId);
   bookReaderModal.classList.add('open');
+  document.body.classList.add('reader-active');
   document.body.style.overflow='hidden';
 }
 function closeBookReader(){
   bookReaderModal.classList.remove('open');
+  document.body.classList.remove('reader-active');
   document.body.style.overflow='';
 }
 bookReaderModal.addEventListener('click', e=>{ if(e.target===bookReaderModal) closeBookReader(); });
