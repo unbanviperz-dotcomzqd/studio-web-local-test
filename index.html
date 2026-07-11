@@ -1708,6 +1708,10 @@ function renderMyProducts(){
           openWorkbook2();
           return;
         }
+        if(lvl.n === 3){
+          openWorkbook3();
+          return;
+        }
         openContentModal({
           num: 'Niveau ' + lvl.n,
           tag: 'Niveau ' + lvl.n + ' · Débloqué',
@@ -3413,6 +3417,420 @@ function openWorkbook2(){
     eyebrow: 'Niveau 2 · Stabiliser ta Base'
   });
 }
+
+/* ========================================================================
+   NIVEAU 3 — "SÉCURISER TA STRUCTURE" (8 exercices)
+   Généré dans la même logique que les niveaux précédents, adapté au thème :
+   structurer sa vie et ses priorités pour éviter la dispersion, protéger ce
+   qui a été construit, commencer à diversifier ses revenus, et vérifier que
+   les investissements produisent réellement. Pas de défi quotidien ici :
+   la sécurisation, c'est de l'organisation et de la clarté — d'où des
+   tableaux et check-lists plutôt qu'un suivi jour par jour, et un bilan
+   final qui fait le pont vers le Niveau 4 (construire des actifs).
+   ======================================================================== */
+const NIV3_KEY = 'systemeInvisible_niveau3';
+const NIV3_LAST_SECTION_KEY = 'systemeInvisible_niveau3_lastSection';
+const NIV3_DEFAULT = {
+  diag: {
+    priorites: [false,false,false,false],
+    protection: [false,false,false,false],
+    diversification: [false,false,false,false],
+    administration: [false,false,false,false]
+  },
+  priorites: { objectifs: [] },
+  protectionList: Array(8).fill(false),
+  diversif: { rows: [] },
+  investBilan: { rows: [] },
+  adminList: Array(8).fill(false),
+  margeSecurite: {
+    revenus:Array(12).fill(''), depenses:Array(12).fill(''), marge:Array(12).fill(''), pourcentPassif:Array(12).fill('')
+  },
+  bilanFinal: Array(10).fill(false)
+};
+
+function renderNiv3Diag(container){
+  const cats = [
+    {key:'priorites', label:'Priorités', items:[
+      "Je sais clairement quels sont mes 3 objectifs prioritaires actuels.",
+      "Je ne me disperse pas sur trop de projets à la fois.",
+      "Je dis non aux sollicitations qui ne servent pas mes priorités.",
+      "Je revois régulièrement mes priorités pour rester aligné."
+    ]},
+    {key:'protection', label:'Protection', items:[
+      "Mes assurances essentielles sont à jour et adaptées.",
+      "Mes documents importants sont sauvegardés et accessibles.",
+      "J'ai anticipé ce qui se passerait pour mes proches en cas de coup dur.",
+      "Mes accès numériques (mots de passe, comptes) sont sécurisés."
+    ]},
+    {key:'diversification', label:'Diversification', items:[
+      "Une partie de mes revenus ne dépend plus uniquement de mon temps de travail.",
+      "Mes investissements commencent à produire un résultat mesurable.",
+      "Je pourrais ralentir un moment sans tout perdre.",
+      "J'ai identifié une deuxième source de revenus à développer."
+    ]},
+    {key:'administration', label:'Administration', items:[
+      "Mon administratif (papiers, comptes, contrats) est organisé et à jour.",
+      "J'ai automatisé une partie de ma gestion (virements, paiements, suivis).",
+      "Je sais où trouver chaque document important en moins de 5 minutes.",
+      "Je ne découvre plus de mauvaises surprises administratives."
+    ]}
+  ];
+  let html = `<p class="wb-intro">Sécuriser sa structure, c'est éviter que tout ce qui a été construit ne repose sur du sable. Coche ce qui est déjà vrai pour toi.</p>`;
+  cats.forEach(cat=>{
+    html += `<div class="wb-block" data-cat="${cat.key}">
+      <div class="wb-block-title">${cat.label} <span class="wb-score" data-score-for="${cat.key}"></span></div>
+      ${cat.items.map((label,i)=>`
+        <label class="wb-check-row">
+          <input type="checkbox" data-diag3-cat="${cat.key}" data-diag3-idx="${i}" ${WB_DATA.diag[cat.key][i]?'checked':''}>
+          <span class="wb-check-box">✓</span>
+          <span class="wb-label">${label}</span>
+        </label>
+      `).join('')}
+    </div>`;
+  });
+  html += `<div class="wb-block"><div class="wb-block-title">Indice de structure <span class="wb-score" id="wbDiag3Global"></span></div></div>`;
+  container.innerHTML = html;
+  updateDiag3Scores();
+  container.querySelectorAll('input[data-diag3-cat]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.diag[inp.dataset.diag3Cat][parseInt(inp.dataset.diag3Idx)] = inp.checked;
+      updateDiag3Scores();
+      saveWbData();
+      updateWbToc();
+    });
+  });
+}
+function updateDiag3Scores(){
+  const cats = {priorites:4, protection:4, diversification:4, administration:4};
+  let total=0, max=0;
+  Object.keys(cats).forEach(k=>{
+    const score = WB_DATA.diag[k].filter(Boolean).length;
+    total += score; max += cats[k];
+    const el = document.querySelector(`[data-score-for="${k}"]`);
+    if(el) el.textContent = 'Score : ' + score + '/' + cats[k];
+  });
+  const g = document.getElementById('wbDiag3Global');
+  if(g) g.textContent = total + '/' + max;
+}
+
+function renderNiv3Priorites(container){
+  container.innerHTML = `<p class="wb-intro">Liste tes objectifs actuels et classe-les par priorité. Ce qui n'est pas prioritaire attendra — c'est ce qui évite la dispersion.</p>
+    <div class="wb-table-wrap"><table class="wb-exp-table">
+      <thead><tr><th>Objectif / Projet</th><th>Priorité</th><th></th></tr></thead>
+      <tbody id="wbPrioBody"></tbody>
+    </table></div>
+    <button class="wb-btn" id="wbPrioAdd" type="button">+ Ajouter un objectif</button>
+    <div class="wb-totals" id="wbPrioTotals"></div>`;
+  renderPrioRows();
+  document.getElementById('wbPrioAdd').addEventListener('click', ()=>{
+    WB_DATA.priorites.objectifs.push({label:'', niveau:'haute'});
+    renderPrioRows(); saveWbData(); updateWbToc();
+  });
+}
+function renderPrioRows(){
+  const body = document.getElementById('wbPrioBody');
+  if(!body) return;
+  body.innerHTML = WB_DATA.priorites.objectifs.map((o,i)=>`
+    <tr data-i="${i}">
+      <td><input type="text" data-f="label" value="${escapeAttr(o.label)}" placeholder="ex : Sécuriser mon épargne"></td>
+      <td>
+        <select data-f="niveau" style="background:transparent;border:1px solid var(--line);border-radius:6px;color:var(--ink);font-size:.78rem;padding:3px 6px;">
+          <option value="haute" ${o.niveau==='haute'?'selected':''}>Haute</option>
+          <option value="moyenne" ${o.niveau==='moyenne'?'selected':''}>Moyenne</option>
+          <option value="basse" ${o.niveau==='basse'?'selected':''}>Basse</option>
+        </select>
+      </td>
+      <td><button class="wb-row-del" data-del="${i}" type="button">✕</button></td>
+    </tr>
+  `).join('') || `<tr><td colspan="3" style="color:var(--muted);text-align:center;padding:16px;">Aucun objectif listé pour l'instant.</td></tr>`;
+  body.querySelectorAll('input,select').forEach(inp=>{
+    const handler = ()=>{
+      const tr = inp.closest('tr'); const i = parseInt(tr.dataset.i);
+      WB_DATA.priorites.objectifs[i][inp.dataset.f] = inp.value;
+      updatePrioTotals(); saveWbData(); updateWbToc();
+    };
+    inp.addEventListener('input', handler);
+    inp.addEventListener('change', handler);
+  });
+  body.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      WB_DATA.priorites.objectifs.splice(parseInt(btn.dataset.del),1);
+      renderPrioRows(); saveWbData(); updateWbToc();
+    });
+  });
+  updatePrioTotals();
+}
+function updatePrioTotals(){
+  const el = document.getElementById('wbPrioTotals');
+  if(!el) return;
+  const h = WB_DATA.priorites.objectifs.filter(o=>o.niveau==='haute').length;
+  const m = WB_DATA.priorites.objectifs.filter(o=>o.niveau==='moyenne').length;
+  const b = WB_DATA.priorites.objectifs.filter(o=>o.niveau==='basse').length;
+  el.innerHTML = `
+    <div class="wb-total-item">Priorité haute<b>${h}</b></div>
+    <div class="wb-total-item">Priorité moyenne<b>${m}</b></div>
+    <div class="wb-total-item">Priorité basse<b>${b}</b></div>
+  `;
+}
+
+function renderNiv3Protection(container){
+  const items = ["Vérifier mes assurances (habitation, santé, responsabilité civile)","Mettre à jour mon assurance emprunteur si besoin","Sauvegarder mes documents importants (cloud + physique)","Organiser mes mots de passe avec un gestionnaire sécurisé","Vérifier les bénéficiaires de mon épargne / assurance-vie","Informer une personne de confiance de mes accès essentiels","Faire un point sur ma couverture en cas d'arrêt de travail","Anticiper la transmission de mon patrimoine, même simple"];
+  container.innerHTML = `<p class="wb-intro">Coche ce que tu as vérifié ou mis en place pour protéger ce que tu as déjà construit.</p><div class="wb-block">
+  ${items.map((label,i)=>`
+    <label class="wb-check-row">
+      <input type="checkbox" data-prot-idx="${i}" ${WB_DATA.protectionList[i]?'checked':''}>
+      <span class="wb-check-box">✓</span>
+      <span class="wb-label">${label}</span>
+    </label>
+  `).join('')}
+  </div>`;
+  container.querySelectorAll('input[data-prot-idx]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.protectionList[parseInt(inp.dataset.protIdx)] = inp.checked;
+      saveWbData(); updateWbToc();
+    });
+  });
+}
+
+function renderNiv3Diversif(container){
+  container.innerHTML = `<p class="wb-intro">Liste tes sources de revenus actuelles. L'objectif : voir combien dépend encore uniquement de ton temps.</p>
+    <div class="wb-table-wrap"><table class="wb-exp-table">
+      <thead><tr><th>Source de revenu</th><th>Type</th><th>Montant (€/mois)</th><th></th></tr></thead>
+      <tbody id="wbDivBody"></tbody>
+    </table></div>
+    <button class="wb-btn" id="wbDivAdd" type="button">+ Ajouter une source</button>
+    <div class="wb-totals">
+      <div class="wb-total-item">Revenus actifs (dépendent de mon temps)<b id="wbDivActif">0 €</b></div>
+      <div class="wb-total-item">Revenus passifs (indépendants de mon temps)<b id="wbDivPassif">0 €</b></div>
+      <div class="wb-total-item">% indépendant de mon temps<b id="wbDivPct">0 %</b></div>
+    </div>`;
+  renderDivRows();
+  document.getElementById('wbDivAdd').addEventListener('click', ()=>{
+    WB_DATA.diversif.rows.push({source:'', type:'actif', montant:''});
+    renderDivRows(); saveWbData(); updateWbToc();
+  });
+}
+function renderDivRows(){
+  const body = document.getElementById('wbDivBody');
+  if(!body) return;
+  body.innerHTML = WB_DATA.diversif.rows.map((r,i)=>`
+    <tr data-i="${i}">
+      <td><input type="text" data-f="source" value="${escapeAttr(r.source)}" placeholder="ex : Salaire, Location, Dividendes…"></td>
+      <td>
+        <select data-f="type" style="background:transparent;border:1px solid var(--line);border-radius:6px;color:var(--ink);font-size:.78rem;padding:3px 6px;">
+          <option value="actif" ${r.type==='actif'?'selected':''}>Actif (temps)</option>
+          <option value="passif" ${r.type==='passif'?'selected':''}>Passif</option>
+        </select>
+      </td>
+      <td><input type="number" data-f="montant" value="${escapeAttr(r.montant)}" placeholder="0"></td>
+      <td><button class="wb-row-del" data-del="${i}" type="button">✕</button></td>
+    </tr>
+  `).join('') || `<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:16px;">Aucune source listée pour l'instant.</td></tr>`;
+  body.querySelectorAll('input,select').forEach(inp=>{
+    const handler = ()=>{
+      const tr = inp.closest('tr'); const i = parseInt(tr.dataset.i);
+      WB_DATA.diversif.rows[i][inp.dataset.f] = inp.value;
+      updateDivTotals(); saveWbData(); updateWbToc();
+    };
+    inp.addEventListener('input', handler);
+    inp.addEventListener('change', handler);
+  });
+  body.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      WB_DATA.diversif.rows.splice(parseInt(btn.dataset.del),1);
+      renderDivRows(); saveWbData(); updateWbToc();
+    });
+  });
+  updateDivTotals();
+}
+function updateDivTotals(){
+  let actif=0, passif=0;
+  WB_DATA.diversif.rows.forEach(r=>{
+    const m = parseFloat(r.montant) || 0;
+    if(r.type==='passif') passif += m; else actif += m;
+  });
+  const total = actif+passif;
+  const aEl = document.getElementById('wbDivActif'); if(aEl) aEl.textContent = actif.toFixed(0) + ' €';
+  const pEl = document.getElementById('wbDivPassif'); if(pEl) pEl.textContent = passif.toFixed(0) + ' €';
+  const pctEl = document.getElementById('wbDivPct'); if(pctEl) pctEl.textContent = (total>0 ? Math.round(passif/total*100) : 0) + ' %';
+}
+
+function renderNiv3InvestBilan(container){
+  container.innerHTML = `<p class="wb-intro">Fais le point sur ce que tu as déjà investi. Est-ce que ça produit vraiment quelque chose ?</p>
+    <div class="wb-table-wrap"><table class="wb-exp-table">
+      <thead><tr><th>Support</th><th>Montant investi (€)</th><th>Rendement estimé (%/an)</th><th></th></tr></thead>
+      <tbody id="wbInvBilanBody"></tbody>
+    </table></div>
+    <button class="wb-btn" id="wbInvBilanAdd" type="button">+ Ajouter un investissement</button>
+    <div class="wb-totals">
+      <div class="wb-total-item">Total investi<b id="wbInvBilanTotal">0 €</b></div>
+      <div class="wb-total-item">Rendement moyen pondéré<b id="wbInvBilanRdt">0 %</b></div>
+    </div>`;
+  renderInvBilanRows();
+  document.getElementById('wbInvBilanAdd').addEventListener('click', ()=>{
+    WB_DATA.investBilan.rows.push({support:'', montant:'', rendement:''});
+    renderInvBilanRows(); saveWbData(); updateWbToc();
+  });
+}
+function renderInvBilanRows(){
+  const body = document.getElementById('wbInvBilanBody');
+  if(!body) return;
+  body.innerHTML = WB_DATA.investBilan.rows.map((r,i)=>`
+    <tr data-i="${i}">
+      <td><input type="text" data-f="support" value="${escapeAttr(r.support)}" placeholder="ex : ETF Monde, PEA, Immobilier…"></td>
+      <td><input type="number" data-f="montant" value="${escapeAttr(r.montant)}" placeholder="0"></td>
+      <td><input type="number" data-f="rendement" value="${escapeAttr(r.rendement)}" placeholder="0"></td>
+      <td><button class="wb-row-del" data-del="${i}" type="button">✕</button></td>
+    </tr>
+  `).join('') || `<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:16px;">Aucun investissement listé pour l'instant.</td></tr>`;
+  body.querySelectorAll('input').forEach(inp=>{
+    const handler = ()=>{
+      const tr = inp.closest('tr'); const i = parseInt(tr.dataset.i);
+      WB_DATA.investBilan.rows[i][inp.dataset.f] = inp.value;
+      updateInvBilanTotals(); saveWbData(); updateWbToc();
+    };
+    inp.addEventListener('input', handler);
+  });
+  body.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      WB_DATA.investBilan.rows.splice(parseInt(btn.dataset.del),1);
+      renderInvBilanRows(); saveWbData(); updateWbToc();
+    });
+  });
+  updateInvBilanTotals();
+}
+function updateInvBilanTotals(){
+  let total=0, weighted=0;
+  WB_DATA.investBilan.rows.forEach(r=>{
+    const m = parseFloat(r.montant) || 0;
+    const rdt = parseFloat(r.rendement) || 0;
+    total += m; weighted += m*rdt;
+  });
+  const tEl = document.getElementById('wbInvBilanTotal'); if(tEl) tEl.textContent = total.toFixed(0) + ' €';
+  const rEl = document.getElementById('wbInvBilanRdt'); if(rEl) rEl.textContent = (total>0 ? (weighted/total).toFixed(1) : '0') + ' %';
+}
+
+function renderNiv3Admin(container){
+  const items = ["Classer mes documents administratifs par catégorie","Créer une sauvegarde numérique de mes documents clés","Lister tous mes abonnements et contrats actifs","Automatiser mes paiements récurrents importants","Centraliser mes mots de passe et accès","Vérifier la date d'échéance de mes contrats principaux","Mettre en place un rappel pour les révisions annuelles","Simplifier ce qui peut l'être (comptes, cartes, abonnements en trop)"];
+  container.innerHTML = `<p class="wb-intro">Une structure solide repose sur un administratif qui ne te surprend plus. Coche ce que tu mets en place.</p><div class="wb-block">
+  ${items.map((label,i)=>`
+    <label class="wb-check-row">
+      <input type="checkbox" data-admin-idx="${i}" ${WB_DATA.adminList[i]?'checked':''}>
+      <span class="wb-check-box">✓</span>
+      <span class="wb-label">${label}</span>
+    </label>
+  `).join('')}
+  </div>`;
+  container.querySelectorAll('input[data-admin-idx]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.adminList[parseInt(inp.dataset.adminIdx)] = inp.checked;
+      saveWbData(); updateWbToc();
+    });
+  });
+}
+
+function renderNiv3Marge(container){
+  const rows = [
+    {key:'revenus', label:'Revenus'},
+    {key:'depenses', label:'Dépenses'},
+    {key:'marge', label:'Marge'},
+    {key:'pourcentPassif', label:'% Revenus indépendants du temps'}
+  ];
+  const months = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc'];
+  container.innerHTML = `<p class="wb-intro">Suis l'évolution de ta marge et de ton indépendance vis-à-vis de ton temps, mois après mois.</p>
+    <div class="wb-dash-table-wrap"><table class="wb-dash-table">
+      <thead><tr><th>Indicateur</th>${months.map(m=>`<th>${m}</th>`).join('')}</tr></thead>
+      <tbody>
+        ${rows.map(r=>`
+          <tr>
+            <td>${r.label}</td>
+            ${months.map((m,mi)=>`<td><input type="text" data-marge3-row="${r.key}" data-marge3-m="${mi}" value="${escapeAttr(WB_DATA.margeSecurite[r.key][mi])}"></td>`).join('')}
+          </tr>
+        `).join('')}
+      </tbody>
+    </table></div>`;
+  container.querySelectorAll('input[data-marge3-row]').forEach(inp=>{
+    inp.addEventListener('input', debounce(()=>{
+      WB_DATA.margeSecurite[inp.dataset.marge3Row][parseInt(inp.dataset.marge3M)] = inp.value;
+      saveWbData(); updateWbToc();
+    }, 400));
+  });
+}
+
+function renderNiv3Bilan(container){
+  const items = [
+    "J'ai identifié mes 3 priorités et je m'y tiens.",
+    "Mes protections essentielles sont en place.",
+    "Une partie de mes revenus commence à devenir indépendante de mon temps.",
+    "Mes investissements produisent un résultat mesurable.",
+    "Mon administratif est structuré et à jour.",
+    "Je pourrais ralentir un mois sans tout perdre.",
+    "Ma marge de sécurité est stable ou en croissance.",
+    "Je sais où je vais et pourquoi.",
+    "Ma structure tient, même sous pression.",
+    "Je suis prêt à construire mes actifs (Niveau 4)."
+  ];
+  container.innerHTML = `<p class="wb-intro">Dernier point avant de passer au niveau suivant. Coche ce qui est vrai aujourd'hui.</p>
+    <div class="wb-block">
+    ${items.map((label,i)=>`
+      <label class="wb-check-row">
+        <input type="checkbox" data-bilan-idx="${i}" ${WB_DATA.bilanFinal[i]?'checked':''}>
+        <span class="wb-check-box">✓</span>
+        <span class="wb-label">${label}</span>
+      </label>
+    `).join('')}
+    </div>
+    <div class="wb-block-title" style="margin-top:10px;">Bilan <span class="wb-score" id="wbBilanScore"></span></div>`;
+  updateBilanScore();
+  container.querySelectorAll('input[data-bilan-idx]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.bilanFinal[parseInt(inp.dataset.bilanIdx)] = inp.checked;
+      updateBilanScore();
+      saveWbData(); updateWbToc();
+    });
+  });
+}
+function updateBilanScore(){
+  const score = WB_DATA.bilanFinal.filter(Boolean).length;
+  const el = document.getElementById('wbBilanScore');
+  if(el) el.textContent = score + '/10';
+}
+
+const NIV3_SECTIONS = [
+  {id:'diag3', title:'Mon diagnostic de structure', render: renderNiv3Diag},
+  {id:'priorites', title:'Exercice — Mes priorités structurées', render: renderNiv3Priorites},
+  {id:'protectionList', title:'Check-list — Sécuriser ce que j\u2019ai construit', render: renderNiv3Protection},
+  {id:'diversif', title:'Exercice — Diversifier mes sources de revenus', render: renderNiv3Diversif},
+  {id:'investBilan', title:'Exercice — Le bilan de mes investissements', render: renderNiv3InvestBilan},
+  {id:'adminList', title:'Check-list — Structurer mon administratif', render: renderNiv3Admin},
+  {id:'margeSecurite', title:'Ma marge de sécurité élargie', render: renderNiv3Marge},
+  {id:'bilanFinal', title:'Bilan final — Prêt pour le Niveau 4 ?', render: renderNiv3Bilan},
+];
+function niv3SectionHasData(id){
+  switch(id){
+    case 'diag3': return Object.values(WB_DATA.diag).some(arr=>arr.some(Boolean));
+    case 'priorites': return WB_DATA.priorites.objectifs.length>0;
+    case 'protectionList': return WB_DATA.protectionList.some(Boolean);
+    case 'diversif': return WB_DATA.diversif.rows.length>0;
+    case 'investBilan': return WB_DATA.investBilan.rows.length>0;
+    case 'adminList': return WB_DATA.adminList.some(Boolean);
+    case 'margeSecurite': return Object.values(WB_DATA.margeSecurite).some(arr=>arr.some(v=>v && String(v).trim()));
+    case 'bilanFinal': return WB_DATA.bilanFinal.some(Boolean);
+  }
+  return false;
+}
+function openWorkbook3(){
+  openWorkbookGeneric({
+    levelNum: 3,
+    defaultShape: NIV3_DEFAULT,
+    storageKey: NIV3_KEY,
+    lastSectionKey: NIV3_LAST_SECTION_KEY,
+    sections: NIV3_SECTIONS,
+    hasDataFn: niv3SectionHasData,
+    eyebrow: 'Niveau 3 · Sécuriser ta Structure'
+  });
+}
+
 
 
 
