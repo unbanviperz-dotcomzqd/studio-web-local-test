@@ -67,9 +67,9 @@ main,header,footer{position:relative;z-index:1;}
 .logo{display:flex;align-items:center;gap:11px;font-family:var(--f-display);font-weight:700;letter-spacing:.07em;font-size:.9rem;text-transform:uppercase;color:var(--ink);text-decoration:none;}
 .logo .inf{font-size:1.45rem;color:var(--gold);line-height:1;transform:translateY(-1px);}
 .logo-img{width:30px!important;height:30px!important;max-width:30px!important;max-height:30px!important;object-fit:contain;flex-shrink:0;display:block;border-radius:6px;}
-.nav-links{display:flex;gap:clamp(2px,.6vw,8px);align-items:center;}
+.nav-links{display:flex;gap:clamp(2px,.6vw,8px);align-items:center;flex-wrap:nowrap;}
 .nav-links a:not(.btn){position:relative;display:flex;align-items:center;gap:7px;color:var(--muted);text-decoration:none;font-size:.78rem;font-weight:500;letter-spacing:.03em;
-  padding:9px 13px;border-radius:22px;overflow:hidden;transition:color .3s ease,background .3s ease,transform .3s ease;}
+  padding:9px 13px;border-radius:22px;overflow:hidden;white-space:nowrap;flex-shrink:0;transition:color .3s ease,background .3s ease,transform .3s ease;}
 .nav-links a:not(.btn)::before{content:'';position:absolute;inset:0;border-radius:22px;background:radial-gradient(circle at 30% 50%,rgba(96,165,250,.16),transparent 70%);
   opacity:0;transition:opacity .35s ease;}
 .nav-links a:not(.btn)::after{content:'';position:absolute;left:13px;right:13px;bottom:5px;height:1px;background:linear-gradient(90deg,var(--blue-glow),var(--gold));
@@ -94,23 +94,41 @@ main,header,footer{position:relative;z-index:1;}
 .btn-ghost{background:transparent;color:var(--blue-glow);border:1px solid var(--line);}
 .btn-ghost:hover{border-color:var(--blue);box-shadow:0 0 20px rgba(59,130,246,.2);}
 .btn-blue{background:linear-gradient(135deg,#2563eb,var(--blue));color:#fff;box-shadow:0 0 20px rgba(59,130,246,.3);}
-.nav-burger{display:none;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:6px;}
-.nav-burger span{width:22px;height:2px;background:var(--ink);transition:transform .3s,opacity .3s;}
-.nav-burger.open span:nth-child(1){transform:translateY(7px) rotate(45deg);}
-.nav-burger.open span:nth-child(2){opacity:0;}
-.nav-burger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
+.nav.links-hidden .nav-links a:not(.btn){display:none;}
 @media(max-width:900px){
   .nav-links a:not(.btn){display:none;}
-  .nav-burger{display:flex;}
-  .nav-links{gap:12px;}
-  .mobile-menu{position:fixed;top:60px;left:0;right:0;z-index:99;background:rgba(5,9,20,.97);backdrop-filter:blur(14px);
-    border-bottom:1px solid var(--line);max-height:0;overflow:hidden;transition:max-height .35s ease;}
-  .mobile-menu.open{max-height:400px;}
-  .mobile-menu a{display:block;padding:16px 24px;color:var(--muted);text-decoration:none;font-size:.9rem;
-    border-bottom:1px solid rgba(96,165,250,.08);}
-  .mobile-menu a:hover{color:var(--ink);}
 }
-@media(min-width:901px){.mobile-menu{display:none;}}
+.nav-burger{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;
+  width:42px;height:42px;background:rgba(212,169,78,.08);border:1px solid rgba(212,169,78,.35);
+  border-radius:10px;cursor:pointer;padding:0;flex-shrink:0;transition:background .3s ease,border-color .3s ease,box-shadow .3s ease;}
+.nav-burger:hover{background:rgba(212,169,78,.16);border-color:var(--gold);box-shadow:0 0 16px rgba(212,169,78,.25);}
+.nav-burger span{width:20px;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--gold-soft),#fff);
+  transition:transform .35s cubic-bezier(.16,1,.3,1),opacity .25s ease,width .25s ease;}
+.nav-burger.open{background:rgba(212,169,78,.14);border-color:var(--gold);}
+.nav-burger.open span:nth-child(1){transform:translateY(8px) rotate(45deg);}
+.nav-burger.open span:nth-child(2){opacity:0;width:0;}
+.nav-burger.open span:nth-child(3){transform:translateY(-8px) rotate(-45deg);}
+.mobile-menu{position:fixed;inset:0;z-index:99;background:rgba(4,7,15,.94);backdrop-filter:blur(16px);
+  display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .4s ease;}
+.mobile-menu.open{opacity:1;pointer-events:auto;}
+.mm-inner{display:flex;flex-direction:column;gap:8px;width:min(380px,88vw);}
+.mobile-menu a{display:flex;align-items:center;gap:12px;padding:15px 22px;color:var(--muted);text-decoration:none;
+  font-family:var(--f-display);font-size:1rem;font-weight:500;letter-spacing:.02em;border-radius:12px;
+  border:1px solid transparent;background:rgba(255,255,255,.02);
+  opacity:0;transform:translateY(14px);transition:color .25s ease,background .25s ease,border-color .25s ease,
+  opacity .4s ease,transform .4s ease;}
+.mobile-menu.open a{opacity:1;transform:translateY(0);}
+.mobile-menu.open a:nth-child(1){transition-delay:.05s;}
+.mobile-menu.open a:nth-child(2){transition-delay:.09s;}
+.mobile-menu.open a:nth-child(3){transition-delay:.13s;}
+.mobile-menu.open a:nth-child(4){transition-delay:.17s;}
+.mobile-menu.open a:nth-child(5){transition-delay:.21s;}
+.mobile-menu.open a:nth-child(6){transition-delay:.25s;}
+.mobile-menu.open a:nth-child(7){transition-delay:.29s;}
+.mobile-menu.open a:nth-child(8){transition-delay:.33s;}
+.mobile-menu a:hover{color:var(--ink);background:rgba(212,169,78,.08);border-color:rgba(212,169,78,.3);
+  transform:translateX(4px);}
+.mobile-menu a .nav-dot{width:7px;height:7px;}
 
 /* ===== SECTIONS / REVEAL ===== */
 section{padding:clamp(80px,11vh,130px) clamp(20px,6vw,80px);max-width:1240px;margin:0 auto;}
@@ -615,14 +633,16 @@ footer a:hover{color:var(--ink);}
   </nav>
 </header>
 <div class="mobile-menu" id="mobileMenu">
-  <a href="#diagnostic">Test de Liberté</a>
-  <a href="#plan">Plan gratuit</a>
-  <a href="#livre">Système Invisible</a>
-  <a href="#niveaux">Les Niveaux</a>
-  <a href="#saga">La Saga</a>
-  <a href="#espace">Espace Membre</a>
-  <a href="#produits">Mes Produits</a>
-  <a href="#faq">FAQ</a>
+  <div class="mm-inner">
+    <a href="#diagnostic"><span class="nav-dot free"></span>Test de Liberté</a>
+    <a href="#plan"><span class="nav-dot free"></span>Plan gratuit</a>
+    <a href="#livre"><span class="nav-dot book"></span>Système Invisible</a>
+    <a href="#niveaux"><span class="nav-dot book"></span>Les Niveaux</a>
+    <a href="#saga"><span class="nav-dot saga"></span>La Saga</a>
+    <a href="#espace"><span class="nav-dot member"></span>Espace Membre</a>
+    <a href="#produits"><span class="nav-dot shop"></span>Mes Produits</a>
+    <a href="#faq"><span class="nav-dot faq"></span>FAQ</a>
+  </div>
 </div>
 
 <main id="top">
@@ -1192,10 +1212,18 @@ function showToast(text){
 /* Menu mobile */
 const navBurger = document.getElementById('navBurger');
 const mobileMenu = document.getElementById('mobileMenu');
+const navHeader = document.querySelector('header.nav');
+const isDesktop = () => window.matchMedia('(min-width:901px)').matches;
 navBurger.addEventListener('click', ()=>{
-  const open = mobileMenu.classList.toggle('open');
-  navBurger.classList.toggle('open', open);
-  navBurger.setAttribute('aria-expanded', open);
+  if(isDesktop()){
+    const hidden = navHeader.classList.toggle('links-hidden');
+    navBurger.classList.toggle('open', hidden);
+    navBurger.setAttribute('aria-expanded', !hidden);
+  } else {
+    const open = mobileMenu.classList.toggle('open');
+    navBurger.classList.toggle('open', open);
+    navBurger.setAttribute('aria-expanded', open);
+  }
 });
 mobileMenu.querySelectorAll('a').forEach(a=>{
   a.addEventListener('click', ()=>{
@@ -1203,6 +1231,20 @@ mobileMenu.querySelectorAll('a').forEach(a=>{
     navBurger.classList.remove('open');
     navBurger.setAttribute('aria-expanded','false');
   });
+});
+mobileMenu.addEventListener('click', e=>{
+  if(e.target === mobileMenu){
+    mobileMenu.classList.remove('open');
+    navBurger.classList.remove('open');
+    navBurger.setAttribute('aria-expanded','false');
+  }
+});
+document.addEventListener('keydown', e=>{
+  if(e.key === 'Escape' && mobileMenu.classList.contains('open')){
+    mobileMenu.classList.remove('open');
+    navBurger.classList.remove('open');
+    navBurger.setAttribute('aria-expanded','false');
+  }
 });
 
 const io = new IntersectionObserver((entries)=>{
