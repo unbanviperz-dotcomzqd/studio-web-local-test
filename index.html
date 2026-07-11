@@ -63,10 +63,10 @@ main,header,footer{position:relative;z-index:1;}
 
 /* ===== NAV ===== */
 .nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;
-  padding:15px clamp(20px,5vw,60px);background:rgba(5,9,20,.8);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);}
+  padding:8px clamp(20px,5vw,60px);background:rgba(5,9,20,.8);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);}
 .logo{display:flex;align-items:center;gap:11px;font-family:var(--f-display);font-weight:700;letter-spacing:.07em;font-size:.9rem;text-transform:uppercase;color:var(--ink);text-decoration:none;}
 .logo .inf{font-size:1.45rem;color:var(--gold);line-height:1;transform:translateY(-1px);}
-.logo-img{width:34px;height:34px;object-fit:contain;flex-shrink:0;}
+.logo-img{width:30px!important;height:30px!important;max-width:30px!important;max-height:30px!important;object-fit:contain;flex-shrink:0;display:block;border-radius:6px;}
 .nav-links{display:flex;gap:clamp(2px,.6vw,8px);align-items:center;}
 .nav-links a:not(.btn){position:relative;display:flex;align-items:center;gap:7px;color:var(--muted);text-decoration:none;font-size:.78rem;font-weight:500;letter-spacing:.03em;
   padding:9px 13px;border-radius:22px;overflow:hidden;transition:color .3s ease,background .3s ease,transform .3s ease;}
@@ -603,7 +603,7 @@ footer a:hover{color:var(--ink);}
 
 <!-- NAV -->
 <header class="nav">
-  <a class="logo" href="#top"><img src="assets/logo.png" alt="Système Invisible" class="logo-img"> Système Invisible</a>
+  <a class="logo" href="#top"><img src="assets/logo.png" alt="Système Invisible" class="logo-img" width="30" height="30"> Système Invisible</a>
   <nav class="nav-links">
     <a href="#diagnostic"><span class="nav-dot free"></span>Test de Liberté</a>
     <a href="#plan"><span class="nav-dot free"></span>Plan gratuit</a>
@@ -1158,7 +1158,7 @@ footer a:hover{color:var(--ink);}
 
 <footer>
   <div class="f-top">
-    <a class="logo" href="#top"><img src="assets/logo.png" alt="Système Invisible" class="logo-img"> Système Invisible</a>
+    <a class="logo" href="#top"><img src="assets/logo.png" alt="Système Invisible" class="logo-img" width="30" height="30"> Système Invisible</a>
     <div class="f-links">
       <a href="#">Mentions légales</a>
       <a href="#">CGV</a>
