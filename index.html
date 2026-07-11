@@ -1728,6 +1728,14 @@ function renderMyProducts(){
           openWorkbook7();
           return;
         }
+        if(lvl.n === 8){
+          openWorkbook8();
+          return;
+        }
+        if(lvl.n === 9){
+          openWorkbook9();
+          return;
+        }
         openContentModal({
           num: 'Niveau ' + lvl.n,
           tag: 'Niveau ' + lvl.n + ' · Débloqué',
@@ -5158,6 +5166,765 @@ function openWorkbook7(){
     eyebrow: 'Niveau 7 · Transmettre et Multiplier'
   });
 }
+
+/* ========================================================================
+   NIVEAU 8 — "MAÎTRISER LE SYSTÈME" (9 exercices)
+   Suite logique du Niveau 7 : tu as construit, optimisé, transmis. Maintenant
+   tu prends de la hauteur — vision globale et cohérente de toute ta
+   structure personnelle, test de résilience, passage de "faire" à "piloter".
+   ======================================================================== */
+const NIV8_KEY = 'systemeInvisible_niveau8';
+const NIV8_LAST_SECTION_KEY = 'systemeInvisible_niveau8_lastSection';
+const NIV8_DEFAULT = {
+  cartographie: { rows: [] },
+  tableauGlobal: {
+    revenu:Array(12).fill(''), marge:Array(12).fill(''), epargne:Array(12).fill(''), patrimoine:Array(12).fill(''),
+    tempsSemaine:Array(12).fill(''), personnesImpactees:Array(12).fill('')
+  },
+  resilience: { rows: [] },
+  coherenceList: Array(10).fill(false),
+  rolePilote: { deleguer:'', decisions:'', arreter:'' },
+  faiblesseList: Array(8).fill(false),
+  consolidation: { rows: [] },
+  revueTrim: { rows: [] },
+  bilanFinal: Array(10).fill(false)
+};
+
+function renderNiv8Cartographie(container){
+  container.innerHTML = `<p class="wb-intro">Liste chaque pièce de ton système — actifs, leviers, protections, sources de revenu — et vérifie qu'elle est vraiment reliée au reste. Un système, ce n'est pas des pièces éparpillées.</p>
+    <div class="wb-table-wrap"><table class="wb-exp-table">
+      <thead><tr><th>Élément</th><th>Catégorie</th><th>État</th><th>Connecté à quoi ?</th><th></th></tr></thead>
+      <tbody id="wbCarto8Body"></tbody>
+    </table></div>
+    <button class="wb-btn" id="wbCarto8Add" type="button">+ Ajouter un élément</button>`;
+  renderCarto8Rows();
+  document.getElementById('wbCarto8Add').addEventListener('click', ()=>{
+    WB_DATA.cartographie.rows.push({element:'', categorie:'actif', etat:'fonctionne', connecte:''});
+    renderCarto8Rows(); saveWbData(); updateWbToc();
+  });
+}
+function renderCarto8Rows(){
+  const body = document.getElementById('wbCarto8Body');
+  if(!body) return;
+  body.innerHTML = WB_DATA.cartographie.rows.map((r,i)=>`
+    <tr data-i="${i}">
+      <td><input type="text" data-f="element" value="${escapeAttr(r.element)}" placeholder="ex : Blog, épargne, équipe…"></td>
+      <td>
+        <select data-f="categorie" style="background:transparent;border:1px solid var(--line);border-radius:6px;color:var(--ink);font-size:.78rem;padding:3px 6px;">
+          <option value="actif" ${r.categorie==='actif'?'selected':''}>Actif</option>
+          <option value="levier" ${r.categorie==='levier'?'selected':''}>Levier</option>
+          <option value="structure" ${r.categorie==='structure'?'selected':''}>Structure</option>
+          <option value="protection" ${r.categorie==='protection'?'selected':''}>Protection</option>
+        </select>
+      </td>
+      <td>
+        <select data-f="etat" style="background:transparent;border:1px solid var(--line);border-radius:6px;color:var(--ink);font-size:.78rem;padding:3px 6px;">
+          <option value="fonctionne" ${r.etat==='fonctionne'?'selected':''}>Fonctionne bien</option>
+          <option value="surveiller" ${r.etat==='surveiller'?'selected':''}>À surveiller</option>
+          <option value="fragile" ${r.etat==='fragile'?'selected':''}>Fragile</option>
+        </select>
+      </td>
+      <td><input type="text" data-f="connecte" value="${escapeAttr(r.connecte)}" placeholder="ex : Alimente mon épargne…"></td>
+      <td><button class="wb-row-del" data-del="${i}" type="button">✕</button></td>
+    </tr>
+  `).join('') || `<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:16px;">Aucun élément listé pour l'instant.</td></tr>`;
+  body.querySelectorAll('input,select').forEach(inp=>{
+    const handler = ()=>{
+      const tr = inp.closest('tr'); const i = parseInt(tr.dataset.i);
+      WB_DATA.cartographie.rows[i][inp.dataset.f] = inp.value;
+      saveWbData(); updateWbToc();
+    };
+    inp.addEventListener('input', handler);
+    inp.addEventListener('change', handler);
+  });
+  body.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      WB_DATA.cartographie.rows.splice(parseInt(btn.dataset.del),1);
+      renderCarto8Rows(); saveWbData(); updateWbToc();
+    });
+  });
+}
+
+function renderNiv8TableauGlobal(container){
+  const rows = [
+    {key:'revenu', label:'Revenu total'},
+    {key:'marge', label:'Marge'},
+    {key:'epargne', label:'Épargne'},
+    {key:'patrimoine', label:'Patrimoine'},
+    {key:'tempsSemaine', label:'Temps travaillé / semaine'},
+    {key:'personnesImpactees', label:'Personnes impactées'}
+  ];
+  const months = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc'];
+  container.innerHTML = `<p class="wb-intro">Le tableau de bord de tout ton système, en un seul endroit. C'est ça, avoir une vision globale.</p>
+    <div class="wb-dash-table-wrap"><table class="wb-dash-table">
+      <thead><tr><th>Indicateur</th>${months.map(m=>`<th>${m}</th>`).join('')}</tr></thead>
+      <tbody>
+        ${rows.map(r=>`
+          <tr>
+            <td>${r.label}</td>
+            ${months.map((m,mi)=>`<td><input type="text" data-glob8-row="${r.key}" data-glob8-m="${mi}" value="${escapeAttr(WB_DATA.tableauGlobal[r.key][mi])}"></td>`).join('')}
+          </tr>
+        `).join('')}
+      </tbody>
+    </table></div>`;
+  container.querySelectorAll('input[data-glob8-row]').forEach(inp=>{
+    inp.addEventListener('input', debounce(()=>{
+      WB_DATA.tableauGlobal[inp.dataset.glob8Row][parseInt(inp.dataset.glob8M)] = inp.value;
+      saveWbData(); updateWbToc();
+    }, 400));
+  });
+}
+
+function renderNiv8Resilience(container){
+  container.innerHTML = `<p class="wb-intro">Un système maîtrisé résiste aux imprévus. Teste le tien : pour chaque scénario, évalue l'impact et prépare une réponse.</p>
+    <div class="wb-table-wrap"><table class="wb-exp-table">
+      <thead><tr><th>Scénario</th><th>Impact</th><th>Mon plan de réponse</th><th></th></tr></thead>
+      <tbody id="wbResilBody"></tbody>
+    </table></div>
+    <button class="wb-btn" id="wbResilAdd" type="button">+ Ajouter un scénario</button>`;
+  renderResilRows();
+  document.getElementById('wbResilAdd').addEventListener('click', ()=>{
+    WB_DATA.resilience.rows.push({scenario:'', impact:'moyen', plan:''});
+    renderResilRows(); saveWbData(); updateWbToc();
+  });
+}
+function renderResilRows(){
+  const body = document.getElementById('wbResilBody');
+  if(!body) return;
+  const defaults = ["Je perds ma source de revenu principale","Je suis arrêté 3 mois pour raison de santé","Un actif s'arrête de produire","Une crise économique touche mes investissements","Je perds une personne clé de mon équipe"];
+  if(WB_DATA.resilience.rows.length===0 && !WB_DATA.resilience.seeded){
+    defaults.forEach(s=> WB_DATA.resilience.rows.push({scenario:s, impact:'moyen', plan:''}));
+    WB_DATA.resilience.seeded = true;
+  }
+  body.innerHTML = WB_DATA.resilience.rows.map((r,i)=>`
+    <tr data-i="${i}">
+      <td><input type="text" data-f="scenario" value="${escapeAttr(r.scenario)}" placeholder="ex : Je perds mon plus gros client"></td>
+      <td>
+        <select data-f="impact" style="background:transparent;border:1px solid var(--line);border-radius:6px;color:var(--ink);font-size:.78rem;padding:3px 6px;">
+          <option value="faible" ${r.impact==='faible'?'selected':''}>Faible</option>
+          <option value="moyen" ${r.impact==='moyen'?'selected':''}>Moyen</option>
+          <option value="fort" ${r.impact==='fort'?'selected':''}>Fort</option>
+        </select>
+      </td>
+      <td><input type="text" data-f="plan" value="${escapeAttr(r.plan)}" placeholder="Ma réponse si ça arrive…"></td>
+      <td><button class="wb-row-del" data-del="${i}" type="button">✕</button></td>
+    </tr>
+  `).join('');
+  body.querySelectorAll('input,select').forEach(inp=>{
+    const handler = ()=>{
+      const tr = inp.closest('tr'); const i = parseInt(tr.dataset.i);
+      WB_DATA.resilience.rows[i][inp.dataset.f] = inp.value;
+      saveWbData(); updateWbToc();
+    };
+    inp.addEventListener('input', handler);
+    inp.addEventListener('change', handler);
+  });
+  body.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      WB_DATA.resilience.rows.splice(parseInt(btn.dataset.del),1);
+      renderResilRows(); saveWbData(); updateWbToc();
+    });
+  });
+}
+
+function renderNiv8Coherence(container){
+  const items = ["Mes flux financiers et mon emploi du temps sont alignés","Mes actifs se renforcent entre eux plutôt que de se disperser","Mes leviers sont utilisés ensemble, pas isolément","Ma protection couvre bien ce que j'ai construit","Ce que je transmets nourrit aussi ce que je construis","Mes priorités du niveau 3 sont toujours d'actualité","Je pourrais expliquer tout mon système en 5 minutes, clairement","Rien dans mon système ne dépend d'une seule chose fragile","Mes décisions récentes servent la même direction globale","Mon système continuerait à fonctionner un mois sans moi"];
+  container.innerHTML = `<p class="wb-intro">Un système cohérent, ce n'est pas un empilement de bonnes actions — c'est un ensemble qui se tient. Coche ce qui est vrai.</p><div class="wb-block">
+  ${items.map((label,i)=>`
+    <label class="wb-check-row">
+      <input type="checkbox" data-coh8-idx="${i}" ${WB_DATA.coherenceList[i]?'checked':''}>
+      <span class="wb-check-box">✓</span>
+      <span class="wb-label">${label}</span>
+    </label>
+  `).join('')}
+  </div>`;
+  container.querySelectorAll('input[data-coh8-idx]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.coherenceList[parseInt(inp.dataset.coh8Idx)] = inp.checked;
+      saveWbData(); updateWbToc();
+    });
+  });
+}
+
+function renderNiv8Pilote(container){
+  const fields = [
+    {key:'deleguer', label:'Qu\u2019est-ce que je fais encore moi-même et que je devrais déléguer ou automatiser ?'},
+    {key:'decisions', label:'Quelles décisions stratégiques dois-je prendre ce trimestre ?'},
+    {key:'arreter', label:'Sur quoi dois-je arrêter de me concentrer pour piloter, plutôt que faire ?'}
+  ];
+  container.innerHTML = `<p class="wb-intro">Maîtriser le système, c'est passer de celui qui fait à celui qui pilote.</p>
+  ${fields.map(f=>`
+    <div class="wb-field">
+      <label>${f.label}</label>
+      <textarea class="wb-textarea" data-pilote="${f.key}">${escapeHtml(WB_DATA.rolePilote[f.key])}</textarea>
+    </div>
+  `).join('')}`;
+  container.querySelectorAll('textarea[data-pilote]').forEach(ta=>{
+    ta.addEventListener('input', debounce(()=>{
+      WB_DATA.rolePilote[ta.dataset.pilote] = ta.value;
+      saveWbData(); updateWbToc();
+    }, 500));
+  });
+}
+
+function renderNiv8Faiblesses(container){
+  const items = ["Je dépends encore trop d'une seule source de revenu","Je n'ai pas vraiment de plan B si un pilier s'effondre","Un processus important n'est documenté nulle part","Une personne clé n'est pas remplaçable dans mon système","Mes indicateurs ne sont pas suivis régulièrement","Certaines décisions traînent depuis trop longtemps","Mon système dépend encore trop de ma présence constante","Je n'ai pas testé ce qui se passerait en cas de coup dur"];
+  container.innerHTML = `<p class="wb-intro">Un système solide se juge à son maillon le plus faible. Coche ce qui te concerne aujourd'hui — sans complaisance.</p><div class="wb-block">
+  ${items.map((label,i)=>`
+    <label class="wb-check-row">
+      <input type="checkbox" data-faib8-idx="${i}" ${WB_DATA.faiblesseList[i]?'checked':''}>
+      <span class="wb-check-box">✓</span>
+      <span class="wb-label">${label}</span>
+    </label>
+  `).join('')}
+  </div>`;
+  container.querySelectorAll('input[data-faib8-idx]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.faiblesseList[parseInt(inp.dataset.faib8Idx)] = inp.checked;
+      saveWbData(); updateWbToc();
+    });
+  });
+}
+
+function renderNiv8Consolidation(container){
+  container.innerHTML = `<p class="wb-intro">Transforme tes maillons faibles en plan d'action.</p>
+    <div class="wb-table-wrap"><table class="wb-exp-table">
+      <thead><tr><th>Action</th><th>Élément concerné</th><th>Priorité</th><th>Échéance</th><th></th></tr></thead>
+      <tbody id="wbConso8Body"></tbody>
+    </table></div>
+    <button class="wb-btn" id="wbConso8Add" type="button">+ Ajouter une action</button>`;
+  renderConso8Rows();
+  document.getElementById('wbConso8Add').addEventListener('click', ()=>{
+    WB_DATA.consolidation.rows.push({action:'', element:'', priorite:'moyenne', echeance:''});
+    renderConso8Rows(); saveWbData(); updateWbToc();
+  });
+}
+function renderConso8Rows(){
+  const body = document.getElementById('wbConso8Body');
+  if(!body) return;
+  body.innerHTML = WB_DATA.consolidation.rows.map((r,i)=>`
+    <tr data-i="${i}">
+      <td><input type="text" data-f="action" value="${escapeAttr(r.action)}" placeholder="ex : Documenter mon processus principal"></td>
+      <td><input type="text" data-f="element" value="${escapeAttr(r.element)}" placeholder="ex : Mon activité principale"></td>
+      <td>
+        <select data-f="priorite" style="background:transparent;border:1px solid var(--line);border-radius:6px;color:var(--ink);font-size:.78rem;padding:3px 6px;">
+          <option value="haute" ${r.priorite==='haute'?'selected':''}>Haute</option>
+          <option value="moyenne" ${r.priorite==='moyenne'?'selected':''}>Moyenne</option>
+          <option value="basse" ${r.priorite==='basse'?'selected':''}>Basse</option>
+        </select>
+      </td>
+      <td><input type="text" data-f="echeance" value="${escapeAttr(r.echeance)}" placeholder="ex : Ce trimestre"></td>
+      <td><button class="wb-row-del" data-del="${i}" type="button">✕</button></td>
+    </tr>
+  `).join('') || `<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:16px;">Aucune action pour l'instant.</td></tr>`;
+  body.querySelectorAll('input,select').forEach(inp=>{
+    const handler = ()=>{
+      const tr = inp.closest('tr'); const i = parseInt(tr.dataset.i);
+      WB_DATA.consolidation.rows[i][inp.dataset.f] = inp.value;
+      saveWbData(); updateWbToc();
+    };
+    inp.addEventListener('input', handler);
+    inp.addEventListener('change', handler);
+  });
+  body.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      WB_DATA.consolidation.rows.splice(parseInt(btn.dataset.del),1);
+      renderConso8Rows(); saveWbData(); updateWbToc();
+    });
+  });
+}
+
+function renderNiv8Revue(container){
+  container.innerHTML = `<p class="wb-intro">Un pilote fait le point à intervalle régulier — ni trop souvent, ni jamais. Une revue par trimestre.</p>
+    <div class="wb-table-wrap"><table class="wb-exp-table">
+      <thead><tr><th>Trimestre</th><th>Ce qui a bien fonctionné</th><th>Ce qui doit changer</th><th>Ma décision</th><th></th></tr></thead>
+      <tbody id="wbRevue8Body"></tbody>
+    </table></div>
+    <button class="wb-btn" id="wbRevue8Add" type="button">+ Ajouter un trimestre</button>`;
+  renderRevue8Rows();
+  document.getElementById('wbRevue8Add').addEventListener('click', ()=>{
+    WB_DATA.revueTrim.rows.push({trimestre:'', marche:'', changer:'', decision:''});
+    renderRevue8Rows(); saveWbData(); updateWbToc();
+  });
+}
+function renderRevue8Rows(){
+  const body = document.getElementById('wbRevue8Body');
+  if(!body) return;
+  body.innerHTML = WB_DATA.revueTrim.rows.map((r,i)=>`
+    <tr data-i="${i}">
+      <td><input type="text" data-f="trimestre" value="${escapeAttr(r.trimestre)}" placeholder="ex : T3 2026"></td>
+      <td><input type="text" data-f="marche" value="${escapeAttr(r.marche)}" placeholder="…"></td>
+      <td><input type="text" data-f="changer" value="${escapeAttr(r.changer)}" placeholder="…"></td>
+      <td><input type="text" data-f="decision" value="${escapeAttr(r.decision)}" placeholder="…"></td>
+      <td><button class="wb-row-del" data-del="${i}" type="button">✕</button></td>
+    </tr>
+  `).join('') || `<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:16px;">Aucune revue pour l'instant.</td></tr>`;
+  body.querySelectorAll('input').forEach(inp=>{
+    const handler = ()=>{
+      const tr = inp.closest('tr'); const i = parseInt(tr.dataset.i);
+      WB_DATA.revueTrim.rows[i][inp.dataset.f] = inp.value;
+      saveWbData(); updateWbToc();
+    };
+    inp.addEventListener('input', handler);
+  });
+  body.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      WB_DATA.revueTrim.rows.splice(parseInt(btn.dataset.del),1);
+      renderRevue8Rows(); saveWbData(); updateWbToc();
+    });
+  });
+}
+
+function renderNiv8Bilan(container){
+  const items = [
+    "J'ai une vision claire de l'ensemble de mon système, pas juste de ses pièces.",
+    "Je sais précisément ce qui est fragile et ce qui est solide.",
+    "J'ai testé au moins un scénario de résilience concret.",
+    "Mes différents éléments se renforcent au lieu de se disperser.",
+    "Je pilote mes décisions plutôt que de subir les événements.",
+    "J'ai un rituel de revue régulier, pas seulement des réactions ponctuelles.",
+    "Mon système pourrait tourner un mois sans mon implication directe.",
+    "Je pourrais expliquer mon système entier simplement, à quelqu'un d'autre.",
+    "Mes maillons faibles identifiés sont en cours de consolidation.",
+    "Je suis prêt à élargir mon influence au-delà de mon cercle (Niveau 9)."
+  ];
+  container.innerHTML = `<p class="wb-intro">Dernier point avant la suite. Coche ce qui est vrai aujourd'hui.</p>
+    <div class="wb-block">
+    ${items.map((label,i)=>`
+      <label class="wb-check-row">
+        <input type="checkbox" data-bilan8-idx="${i}" ${WB_DATA.bilanFinal[i]?'checked':''}>
+        <span class="wb-check-box">✓</span>
+        <span class="wb-label">${label}</span>
+      </label>
+    `).join('')}
+    </div>
+    <div class="wb-block-title" style="margin-top:10px;">Bilan <span class="wb-score" id="wbBilan8Score"></span></div>`;
+  updateBilan8Score();
+  container.querySelectorAll('input[data-bilan8-idx]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.bilanFinal[parseInt(inp.dataset.bilan8Idx)] = inp.checked;
+      updateBilan8Score();
+      saveWbData(); updateWbToc();
+    });
+  });
+}
+function updateBilan8Score(){
+  const score = WB_DATA.bilanFinal.filter(Boolean).length;
+  const el = document.getElementById('wbBilan8Score');
+  if(el) el.textContent = score + '/10';
+}
+
+const NIV8_SECTIONS = [
+  {id:'cartographie', title:'Exercice — Cartographier mon système complet', render: renderNiv8Cartographie},
+  {id:'tableauGlobal', title:'Mon tableau de bord global', render: renderNiv8TableauGlobal},
+  {id:'resilience', title:'Exercice — Test de résilience : et si… ?', render: renderNiv8Resilience},
+  {id:'coherenceList', title:'Check-list — Mon système est-il cohérent ?', render: renderNiv8Coherence},
+  {id:'rolePilote', title:'Exercice — Du faire au piloter', render: renderNiv8Pilote},
+  {id:'faiblesseList', title:'Check-list — Identifier mes maillons faibles', render: renderNiv8Faiblesses},
+  {id:'consolidation', title:'Exercice — Mon plan de consolidation', render: renderNiv8Consolidation},
+  {id:'revueTrim', title:'Ma revue trimestrielle de pilotage', render: renderNiv8Revue},
+  {id:'bilanFinal', title:'Bilan final — Prêt pour le Niveau 9 ?', render: renderNiv8Bilan},
+];
+function niv8SectionHasData(id){
+  switch(id){
+    case 'cartographie': return WB_DATA.cartographie.rows.length>0;
+    case 'tableauGlobal': return Object.values(WB_DATA.tableauGlobal).some(arr=>arr.some(v=>v && String(v).trim()));
+    case 'resilience': return WB_DATA.resilience.rows.some(r=>r.plan && r.plan.trim());
+    case 'coherenceList': return WB_DATA.coherenceList.some(Boolean);
+    case 'rolePilote': return Object.values(WB_DATA.rolePilote).some(v=>v && v.trim());
+    case 'faiblesseList': return WB_DATA.faiblesseList.some(Boolean);
+    case 'consolidation': return WB_DATA.consolidation.rows.length>0;
+    case 'revueTrim': return WB_DATA.revueTrim.rows.length>0;
+    case 'bilanFinal': return WB_DATA.bilanFinal.some(Boolean);
+  }
+  return false;
+}
+function openWorkbook8(){
+  openWorkbookGeneric({
+    levelNum: 8,
+    defaultShape: NIV8_DEFAULT,
+    storageKey: NIV8_KEY,
+    lastSectionKey: NIV8_LAST_SECTION_KEY,
+    sections: NIV8_SECTIONS,
+    hasDataFn: niv8SectionHasData,
+    eyebrow: 'Niveau 8 · Maîtriser le Système'
+  });
+}
+
+
+/* ========================================================================
+   NIVEAU 9 — "DEVENIR LÉGENDE" (9 exercices)
+   Suite logique du Niveau 8 : ton système est maîtrisé et cohérent.
+   Maintenant ton influence dépasse ton cercle proche — ton rayonnement
+   devient un actif à part entière, au même titre que ceux du Niveau 4.
+   ======================================================================== */
+const NIV9_KEY = 'systemeInvisible_niveau9';
+const NIV9_LAST_SECTION_KEY = 'systemeInvisible_niveau9_lastSection';
+const NIV9_DEFAULT = {
+  diagRayonnement: {
+    visibilite: [false,false,false,false],
+    reputation: [false,false,false,false],
+    sollicitations: [false,false,false,false]
+  },
+  cartePublics: { rows: [] },
+  messageSignature: { connuPour:'', histoire:'', transformation:'' },
+  presenceList: Array(10).fill(false),
+  suiviRayonnement: {
+    audience:Array(12).fill(''), mentions:Array(12).fill(''), sollicitations:Array(12).fill(''), opportunites:Array(12).fill('')
+  },
+  credibiliteList: Array(8).fill(false),
+  planVisibilite: { rows: [] },
+  journalOpp: { rows: [] },
+  bilanFinal: Array(10).fill(false)
+};
+
+function renderNiv9Diag(container){
+  const cats = [
+    {key:'visibilite', label:'Visibilité', items:[
+      "J'ai une présence cohérente sur au moins un canal.",
+      "Ce que je partage reflète vraiment ce que je fais.",
+      "Des gens qui ne me connaissent pas peuvent me trouver.",
+      "Je publie ou m'exprime régulièrement, pas juste ponctuellement."
+    ]},
+    {key:'reputation', label:'Réputation', items:[
+      "Des gens me citent ou me recommandent spontanément.",
+      "On m'associe à un sujet ou une compétence précise.",
+      "J'ai des preuves concrètes de ce que j'affirme (résultats, témoignages).",
+      "Ma réputation est cohérente, peu importe qui en parle."
+    ]},
+    {key:'sollicitations', label:'Sollicitations', items:[
+      "On me sollicite déjà pour mon expertise, sans que je démarche.",
+      "J'ai déjà été invité à parler, écrire, ou intervenir quelque part.",
+      "Des opportunités arrivent à moi grâce à ma visibilité.",
+      "Je pourrais nommer au moins une opportunité née de mon rayonnement."
+    ]}
+  ];
+  let html = `<p class="wb-intro">Le rayonnement n'est pas de la vanité — c'est un actif qui travaille pour toi, comme les autres. Coche ce qui est déjà vrai.</p>`;
+  cats.forEach(cat=>{
+    html += `<div class="wb-block" data-cat="${cat.key}">
+      <div class="wb-block-title">${cat.label} <span class="wb-score" data-score-for="${cat.key}"></span></div>
+      ${cat.items.map((label,i)=>`
+        <label class="wb-check-row">
+          <input type="checkbox" data-diag9-cat="${cat.key}" data-diag9-idx="${i}" ${WB_DATA.diagRayonnement[cat.key][i]?'checked':''}>
+          <span class="wb-check-box">✓</span>
+          <span class="wb-label">${label}</span>
+        </label>
+      `).join('')}
+    </div>`;
+  });
+  html += `<div class="wb-block"><div class="wb-block-title">Indice de rayonnement <span class="wb-score" id="wbDiag9Global"></span></div></div>`;
+  container.innerHTML = html;
+  updateDiag9Scores();
+  container.querySelectorAll('input[data-diag9-cat]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.diagRayonnement[inp.dataset.diag9Cat][parseInt(inp.dataset.diag9Idx)] = inp.checked;
+      updateDiag9Scores();
+      saveWbData();
+      updateWbToc();
+    });
+  });
+}
+function updateDiag9Scores(){
+  const cats = {visibilite:4, reputation:4, sollicitations:4};
+  let total=0, max=0;
+  Object.keys(cats).forEach(k=>{
+    const score = WB_DATA.diagRayonnement[k].filter(Boolean).length;
+    total += score; max += cats[k];
+    const el = document.querySelector(`[data-score-for="${k}"]`);
+    if(el) el.textContent = 'Score : ' + score + '/' + cats[k];
+  });
+  const g = document.getElementById('wbDiag9Global');
+  if(g) g.textContent = total + '/' + max;
+}
+
+function renderNiv9Publics(container){
+  container.innerHTML = `<p class="wb-intro">Ton influence ne touche pas tout le monde de la même façon. Identifie tes publics et le message adapté à chacun.</p>
+    <div class="wb-table-wrap"><table class="wb-exp-table">
+      <thead><tr><th>Public cible</th><th>Canal</th><th>Message clé</th><th>Déjà touché ?</th><th></th></tr></thead>
+      <tbody id="wbPub9Body"></tbody>
+    </table></div>
+    <button class="wb-btn" id="wbPub9Add" type="button">+ Ajouter un public</button>`;
+  renderPub9Rows();
+  document.getElementById('wbPub9Add').addEventListener('click', ()=>{
+    WB_DATA.cartePublics.rows.push({public:'', canal:'', message:'', touche:false});
+    renderPub9Rows(); saveWbData(); updateWbToc();
+  });
+}
+function renderPub9Rows(){
+  const body = document.getElementById('wbPub9Body');
+  if(!body) return;
+  body.innerHTML = WB_DATA.cartePublics.rows.map((r,i)=>`
+    <tr data-i="${i}">
+      <td><input type="text" data-f="public" value="${escapeAttr(r.public)}" placeholder="ex : Entrepreneurs débutants…"></td>
+      <td><input type="text" data-f="canal" value="${escapeAttr(r.canal)}" placeholder="ex : Réseaux sociaux, presse…"></td>
+      <td><input type="text" data-f="message" value="${escapeAttr(r.message)}" placeholder="ex : Ce que je veux qu'ils retiennent"></td>
+      <td style="text-align:center;"><input type="checkbox" data-f="touche" ${r.touche?'checked':''}></td>
+      <td><button class="wb-row-del" data-del="${i}" type="button">✕</button></td>
+    </tr>
+  `).join('') || `<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:16px;">Aucun public listé pour l'instant.</td></tr>`;
+  body.querySelectorAll('input').forEach(inp=>{
+    const handler = ()=>{
+      const tr = inp.closest('tr'); const i = parseInt(tr.dataset.i);
+      const val = inp.type==='checkbox' ? inp.checked : inp.value;
+      WB_DATA.cartePublics.rows[i][inp.dataset.f] = val;
+      saveWbData(); updateWbToc();
+    };
+    inp.addEventListener('input', handler);
+    inp.addEventListener('change', handler);
+  });
+  body.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      WB_DATA.cartePublics.rows.splice(parseInt(btn.dataset.del),1);
+      renderPub9Rows(); saveWbData(); updateWbToc();
+    });
+  });
+}
+
+function renderNiv9Message(container){
+  const fields = [
+    {key:'connuPour', label:'Quelle est LA chose pour laquelle je veux être connu ?'},
+    {key:'histoire', label:'Quelle histoire ou expérience unique puis-je raconter ?'},
+    {key:'transformation', label:'Quelle transformation est-ce que j\u2019aide les gens à vivre ?'}
+  ];
+  container.innerHTML = `<p class="wb-intro">Un rayonnement fort part toujours d'un message clair, pas de tout dire à tout le monde.</p>
+  ${fields.map(f=>`
+    <div class="wb-field">
+      <label>${f.label}</label>
+      <textarea class="wb-textarea" data-msg9="${f.key}">${escapeHtml(WB_DATA.messageSignature[f.key])}</textarea>
+    </div>
+  `).join('')}`;
+  container.querySelectorAll('textarea[data-msg9]').forEach(ta=>{
+    ta.addEventListener('input', debounce(()=>{
+      WB_DATA.messageSignature[ta.dataset.msg9] = ta.value;
+      saveWbData(); updateWbToc();
+    }, 500));
+  });
+}
+
+function renderNiv9Presence(container){
+  const items = ["Créer du contenu régulièrement sur un canal clé","Avoir une bio/présentation claire et cohérente partout","Partager des résultats concrets, pas seulement des idées","Réagir et échanger avec ma communauté existante","Collaborer avec d'autres personnes visibles dans mon domaine","Documenter mon parcours, pas seulement le résultat final","Me rendre disponible pour une interview, un podcast, un article","Créer un contenu \u201cphare\u201d qui résume qui je suis","Rester cohérent dans le temps, même sans retour immédiat","Mesurer régulièrement ce qui fonctionne et ajuster"];
+  container.innerHTML = `<p class="wb-intro">Construire une présence, c'est de la constance plus que du talent. Coche ce que tu mets en place.</p><div class="wb-block">
+  ${items.map((label,i)=>`
+    <label class="wb-check-row">
+      <input type="checkbox" data-pres9-idx="${i}" ${WB_DATA.presenceList[i]?'checked':''}>
+      <span class="wb-check-box">✓</span>
+      <span class="wb-label">${label}</span>
+    </label>
+  `).join('')}
+  </div>`;
+  container.querySelectorAll('input[data-pres9-idx]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.presenceList[parseInt(inp.dataset.pres9Idx)] = inp.checked;
+      saveWbData(); updateWbToc();
+    });
+  });
+}
+
+function renderNiv9Suivi(container){
+  const rows = [
+    {key:'audience', label:'Audience / abonnés'},
+    {key:'mentions', label:'Mentions ou citations reçues'},
+    {key:'sollicitations', label:'Sollicitations reçues'},
+    {key:'opportunites', label:'Opportunités générées'}
+  ];
+  const months = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc'];
+  container.innerHTML = `<p class="wb-intro">Suis la croissance de ton rayonnement, mois après mois — comme n'importe quel autre actif.</p>
+    <div class="wb-dash-table-wrap"><table class="wb-dash-table">
+      <thead><tr><th>Indicateur</th>${months.map(m=>`<th>${m}</th>`).join('')}</tr></thead>
+      <tbody>
+        ${rows.map(r=>`
+          <tr>
+            <td>${r.label}</td>
+            ${months.map((m,mi)=>`<td><input type="text" data-suivi9-row="${r.key}" data-suivi9-m="${mi}" value="${escapeAttr(WB_DATA.suiviRayonnement[r.key][mi])}"></td>`).join('')}
+          </tr>
+        `).join('')}
+      </tbody>
+    </table></div>`;
+  container.querySelectorAll('input[data-suivi9-row]').forEach(inp=>{
+    inp.addEventListener('input', debounce(()=>{
+      WB_DATA.suiviRayonnement[inp.dataset.suivi9Row][parseInt(inp.dataset.suivi9M)] = inp.value;
+      saveWbData(); updateWbToc();
+    }, 400));
+  });
+}
+
+function renderNiv9Credibilite(container){
+  const items = ["J'ai des résultats concrets et vérifiables à montrer","J'ai des témoignages ou retours de personnes que j'ai aidées","Je reste cohérent entre ce que je dis et ce que je fais","Je reconnais mes erreurs plutôt que de les cacher","Je documente mes résultats au fil du temps","Je ne promets pas plus que ce que je peux tenir","D'autres personnes crédibles me recommandent","Ma crédibilité tient même quand je ne suis pas dans la pièce"];
+  container.innerHTML = `<p class="wb-intro">Le rayonnement sans crédibilité s'effondre vite. Coche ce qui est déjà solide chez toi.</p><div class="wb-block">
+  ${items.map((label,i)=>`
+    <label class="wb-check-row">
+      <input type="checkbox" data-cred9-idx="${i}" ${WB_DATA.credibiliteList[i]?'checked':''}>
+      <span class="wb-check-box">✓</span>
+      <span class="wb-label">${label}</span>
+    </label>
+  `).join('')}
+  </div>`;
+  container.querySelectorAll('input[data-cred9-idx]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.credibiliteList[parseInt(inp.dataset.cred9Idx)] = inp.checked;
+      saveWbData(); updateWbToc();
+    });
+  });
+}
+
+function renderNiv9Plan(container){
+  container.innerHTML = `<p class="wb-intro">Transforme ton intention de rayonnement en actions planifiées.</p>
+    <div class="wb-table-wrap"><table class="wb-exp-table">
+      <thead><tr><th>Action</th><th>Canal</th><th>Fréquence</th><th>Objectif</th><th></th></tr></thead>
+      <tbody id="wbPlan9Body"></tbody>
+    </table></div>
+    <button class="wb-btn" id="wbPlan9Add" type="button">+ Ajouter une action</button>`;
+  renderPlan9Rows();
+  document.getElementById('wbPlan9Add').addEventListener('click', ()=>{
+    WB_DATA.planVisibilite.rows.push({action:'', canal:'', frequence:'', objectif:''});
+    renderPlan9Rows(); saveWbData(); updateWbToc();
+  });
+}
+function renderPlan9Rows(){
+  const body = document.getElementById('wbPlan9Body');
+  if(!body) return;
+  body.innerHTML = WB_DATA.planVisibilite.rows.map((r,i)=>`
+    <tr data-i="${i}">
+      <td><input type="text" data-f="action" value="${escapeAttr(r.action)}" placeholder="ex : Publier un retour d'expérience"></td>
+      <td><input type="text" data-f="canal" value="${escapeAttr(r.canal)}" placeholder="ex : LinkedIn, newsletter…"></td>
+      <td><input type="text" data-f="frequence" value="${escapeAttr(r.frequence)}" placeholder="ex : 1x/semaine"></td>
+      <td><input type="text" data-f="objectif" value="${escapeAttr(r.objectif)}" placeholder="ex : Toucher 500 personnes"></td>
+      <td><button class="wb-row-del" data-del="${i}" type="button">✕</button></td>
+    </tr>
+  `).join('') || `<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:16px;">Aucune action pour l'instant.</td></tr>`;
+  body.querySelectorAll('input').forEach(inp=>{
+    const handler = ()=>{
+      const tr = inp.closest('tr'); const i = parseInt(tr.dataset.i);
+      WB_DATA.planVisibilite.rows[i][inp.dataset.f] = inp.value;
+      saveWbData(); updateWbToc();
+    };
+    inp.addEventListener('input', handler);
+  });
+  body.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      WB_DATA.planVisibilite.rows.splice(parseInt(btn.dataset.del),1);
+      renderPlan9Rows(); saveWbData(); updateWbToc();
+    });
+  });
+}
+
+function renderNiv9Journal(container){
+  container.innerHTML = `<p class="wb-intro">Chaque opportunité née de ton rayonnement mérite d'être notée — c'est la preuve que ça fonctionne.</p>
+    <div class="wb-table-wrap"><table class="wb-exp-table">
+      <thead><tr><th>Date</th><th>Opportunité</th><th>Origine</th><th>Suite donnée</th><th></th></tr></thead>
+      <tbody id="wbJourn9Body"></tbody>
+    </table></div>
+    <button class="wb-btn" id="wbJourn9Add" type="button">+ Ajouter une entrée</button>`;
+  renderJourn9Rows();
+  document.getElementById('wbJourn9Add').addEventListener('click', ()=>{
+    WB_DATA.journalOpp.rows.push({date:'', opportunite:'', origine:'', suite:''});
+    renderJourn9Rows(); saveWbData(); updateWbToc();
+  });
+}
+function renderJourn9Rows(){
+  const body = document.getElementById('wbJourn9Body');
+  if(!body) return;
+  body.innerHTML = WB_DATA.journalOpp.rows.map((r,i)=>`
+    <tr data-i="${i}">
+      <td><input type="text" data-f="date" value="${escapeAttr(r.date)}" placeholder="jj/mm"></td>
+      <td><input type="text" data-f="opportunite" value="${escapeAttr(r.opportunite)}" placeholder="…"></td>
+      <td><input type="text" data-f="origine" value="${escapeAttr(r.origine)}" placeholder="…"></td>
+      <td><input type="text" data-f="suite" value="${escapeAttr(r.suite)}" placeholder="…"></td>
+      <td><button class="wb-row-del" data-del="${i}" type="button">✕</button></td>
+    </tr>
+  `).join('') || `<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:16px;">Aucune entrée pour l'instant.</td></tr>`;
+  body.querySelectorAll('input').forEach(inp=>{
+    const handler = ()=>{
+      const tr = inp.closest('tr'); const i = parseInt(tr.dataset.i);
+      WB_DATA.journalOpp.rows[i][inp.dataset.f] = inp.value;
+      saveWbData(); updateWbToc();
+    };
+    inp.addEventListener('input', handler);
+  });
+  body.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      WB_DATA.journalOpp.rows.splice(parseInt(btn.dataset.del),1);
+      renderJourn9Rows(); saveWbData(); updateWbToc();
+    });
+  });
+}
+
+function renderNiv9Bilan(container){
+  const items = [
+    "Mon message est clair : je sais pour quoi je veux être connu.",
+    "J'ai une présence régulière sur au moins un canal.",
+    "Des gens en dehors de mon cercle proche me connaissent ou me suivent.",
+    "J'ai déjà été sollicité grâce à ma visibilité, sans démarcher.",
+    "Ma crédibilité repose sur des preuves, pas seulement des mots.",
+    "Je suis à l'aise de gagner en visibilité, même si c'est inconfortable.",
+    "Mon rayonnement commence à générer des opportunités concrètes.",
+    "Je documente ce qui fonctionne pour continuer à en tirer parti.",
+    "Mon influence sert aussi ce que je transmets, pas seulement mon image.",
+    "Je suis prêt à construire quelque chose qui dure après moi (Niveau 10)."
+  ];
+  container.innerHTML = `<p class="wb-intro">Dernier point avant la suite. Coche ce qui est vrai aujourd'hui.</p>
+    <div class="wb-block">
+    ${items.map((label,i)=>`
+      <label class="wb-check-row">
+        <input type="checkbox" data-bilan9-idx="${i}" ${WB_DATA.bilanFinal[i]?'checked':''}>
+        <span class="wb-check-box">✓</span>
+        <span class="wb-label">${label}</span>
+      </label>
+    `).join('')}
+    </div>
+    <div class="wb-block-title" style="margin-top:10px;">Bilan <span class="wb-score" id="wbBilan9Score"></span></div>`;
+  updateBilan9Score();
+  container.querySelectorAll('input[data-bilan9-idx]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.bilanFinal[parseInt(inp.dataset.bilan9Idx)] = inp.checked;
+      updateBilan9Score();
+      saveWbData(); updateWbToc();
+    });
+  });
+}
+function updateBilan9Score(){
+  const score = WB_DATA.bilanFinal.filter(Boolean).length;
+  const el = document.getElementById('wbBilan9Score');
+  if(el) el.textContent = score + '/10';
+}
+
+const NIV9_SECTIONS = [
+  {id:'diagRayonnement', title:'Mon diagnostic de rayonnement', render: renderNiv9Diag},
+  {id:'cartePublics', title:'Exercice — Cartographier mes publics', render: renderNiv9Publics},
+  {id:'messageSignature', title:'Exercice — Mon message signature', render: renderNiv9Message},
+  {id:'presenceList', title:'Check-list — Construire ma présence', render: renderNiv9Presence},
+  {id:'suiviRayonnement', title:'Suivi de mon rayonnement', render: renderNiv9Suivi},
+  {id:'credibiliteList', title:'Check-list — Construire ma crédibilité', render: renderNiv9Credibilite},
+  {id:'planVisibilite', title:'Exercice — Mon plan de visibilité', render: renderNiv9Plan},
+  {id:'journalOpp', title:'Journal des opportunités', render: renderNiv9Journal},
+  {id:'bilanFinal', title:'Bilan final — Prêt pour le Niveau 10 ?', render: renderNiv9Bilan},
+];
+function niv9SectionHasData(id){
+  switch(id){
+    case 'diagRayonnement': return Object.values(WB_DATA.diagRayonnement).some(arr=>arr.some(Boolean));
+    case 'cartePublics': return WB_DATA.cartePublics.rows.length>0;
+    case 'messageSignature': return Object.values(WB_DATA.messageSignature).some(v=>v && v.trim());
+    case 'presenceList': return WB_DATA.presenceList.some(Boolean);
+    case 'suiviRayonnement': return Object.values(WB_DATA.suiviRayonnement).some(arr=>arr.some(v=>v && String(v).trim()));
+    case 'credibiliteList': return WB_DATA.credibiliteList.some(Boolean);
+    case 'planVisibilite': return WB_DATA.planVisibilite.rows.length>0;
+    case 'journalOpp': return WB_DATA.journalOpp.rows.length>0;
+    case 'bilanFinal': return WB_DATA.bilanFinal.some(Boolean);
+  }
+  return false;
+}
+function openWorkbook9(){
+  openWorkbookGeneric({
+    levelNum: 9,
+    defaultShape: NIV9_DEFAULT,
+    storageKey: NIV9_KEY,
+    lastSectionKey: NIV9_LAST_SECTION_KEY,
+    sections: NIV9_SECTIONS,
+    hasDataFn: niv9SectionHasData,
+    eyebrow: 'Niveau 9 · Devenir Légende'
+  });
+}
+
 
 
 
