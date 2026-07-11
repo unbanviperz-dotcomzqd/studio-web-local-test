@@ -1736,6 +1736,14 @@ function renderMyProducts(){
           openWorkbook9();
           return;
         }
+        if(lvl.n === 10){
+          openWorkbook10();
+          return;
+        }
+        if(lvl.n === 11){
+          openWorkbook11();
+          return;
+        }
         openContentModal({
           num: 'Niveau ' + lvl.n,
           tag: 'Niveau ' + lvl.n + ' · Débloqué',
@@ -5924,6 +5932,590 @@ function openWorkbook9(){
     eyebrow: 'Niveau 9 · Devenir Légende'
   });
 }
+
+/* ========================================================================
+   NIVEAU 10 — "HÉRITAGE ÉTERNEL" (9 exercices)
+   Suite logique du Niveau 9 : ton influence rayonne. Maintenant il s'agit de
+   construire ce qui continue de produire de la valeur après ton implication
+   directe — autonomie totale du système, transmission de patrimoine, œuvre
+   durable. Se termine normalement par un bilan qui ouvre sur le Niveau 11.
+   ======================================================================== */
+const NIV10_KEY = 'systemeInvisible_niveau10';
+const NIV10_LAST_SECTION_KEY = 'systemeInvisible_niveau10_lastSection';
+const NIV10_DEFAULT = {
+  diagHeritage: {
+    autonomie: [false,false,false,false],
+    transmission: [false,false,false,false],
+    perennite: [false,false,false,false],
+    sens: [false,false,false,false]
+  },
+  cartographie: { rows: [] },
+  autonomieList: Array(10).fill(false),
+  succession: { qui:'', quoiSavoir:'', commentTransmettre:'' },
+  patrimoineList: Array(8).fill(false),
+  oeuvre: { quoi:'', forme:'', beneficiaires:'' },
+  suiviHeritage: {
+    autonomiePct:Array(12).fill(''), valeurTransmise:Array(12).fill(''), personnesFormees:Array(12).fill('')
+  },
+  lettre: { date:'', texte:'' },
+  bilanFinal: Array(10).fill(false)
+};
+
+function renderNiv10Diag(container){
+  const cats = [
+    {key:'autonomie', label:'Autonomie', items:[
+      "Mon système pourrait fonctionner plusieurs mois sans mon implication directe.",
+      "Les décisions courantes ne dépendent plus uniquement de moi.",
+      "Ce que j'ai construit a sa propre dynamique.",
+      "Je pourrais m'absenter longtemps sans que tout s'arrête."
+    ]},
+    {key:'transmission', label:'Transmission', items:[
+      "Ce que je sais est documenté quelque part, pas seulement dans ma tête.",
+      "Une ou plusieurs personnes pourraient reprendre le flambeau.",
+      "Mes proches savent ce que j'ai construit et pourquoi.",
+      "Je transmets déjà, pas seulement dans l'intention."
+    ]},
+    {key:'perennite', label:'Pérennité', items:[
+      "Ce que j'ai construit peut durer au-delà de ma présence active.",
+      "J'ai réfléchi à ce qui arriverait si je n'étais plus là demain.",
+      "Ma structure juridique et financière protège ce qui compte.",
+      "Ce que je construis résiste au changement de contexte."
+    ]},
+    {key:'sens', label:'Sens', items:[
+      "Je sais précisément ce que je veux laisser derrière moi.",
+      "Ce que je construis a une valeur qui dépasse l'argent.",
+      "Mes proches ou successeurs comprennent le sens de ce projet.",
+      "Ce sens reste clair même quand les choses se compliquent."
+    ]}
+  ];
+  let html = `<p class="wb-intro">Un héritage ne se décrète pas au dernier moment — il se construit. Coche ce qui est déjà vrai pour toi.</p>`;
+  cats.forEach(cat=>{
+    html += `<div class="wb-block" data-cat="${cat.key}">
+      <div class="wb-block-title">${cat.label} <span class="wb-score" data-score-for="${cat.key}"></span></div>
+      ${cat.items.map((label,i)=>`
+        <label class="wb-check-row">
+          <input type="checkbox" data-diag10-cat="${cat.key}" data-diag10-idx="${i}" ${WB_DATA.diagHeritage[cat.key][i]?'checked':''}>
+          <span class="wb-check-box">✓</span>
+          <span class="wb-label">${label}</span>
+        </label>
+      `).join('')}
+    </div>`;
+  });
+  html += `<div class="wb-block"><div class="wb-block-title">Indice d'héritage <span class="wb-score" id="wbDiag10Global"></span></div></div>`;
+  container.innerHTML = html;
+  updateDiag10Scores();
+  container.querySelectorAll('input[data-diag10-cat]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.diagHeritage[inp.dataset.diag10Cat][parseInt(inp.dataset.diag10Idx)] = inp.checked;
+      updateDiag10Scores();
+      saveWbData();
+      updateWbToc();
+    });
+  });
+}
+function updateDiag10Scores(){
+  const cats = {autonomie:4, transmission:4, perennite:4, sens:4};
+  let total=0, max=0;
+  Object.keys(cats).forEach(k=>{
+    const score = WB_DATA.diagHeritage[k].filter(Boolean).length;
+    total += score; max += cats[k];
+    const el = document.querySelector(`[data-score-for="${k}"]`);
+    if(el) el.textContent = 'Score : ' + score + '/' + cats[k];
+  });
+  const g = document.getElementById('wbDiag10Global');
+  if(g) g.textContent = total + '/' + max;
+}
+
+function renderNiv10Cartographie(container){
+  container.innerHTML = `<p class="wb-intro">Liste ce qui pourrait te survivre — au sens propre comme au figuré. Ce qui continuerait à exister et produire de la valeur sans toi.</p>
+    <div class="wb-table-wrap"><table class="wb-exp-table">
+      <thead><tr><th>Élément</th><th>Durée de vie estimée sans moi</th><th>Ce qu'il faudrait pour le pérenniser</th><th></th></tr></thead>
+      <tbody id="wbCarto10Body"></tbody>
+    </table></div>
+    <button class="wb-btn" id="wbCarto10Add" type="button">+ Ajouter un élément</button>`;
+  renderCarto10Rows();
+  document.getElementById('wbCarto10Add').addEventListener('click', ()=>{
+    WB_DATA.cartographie.rows.push({element:'', duree:'', pour:''});
+    renderCarto10Rows(); saveWbData(); updateWbToc();
+  });
+}
+function renderCarto10Rows(){
+  const body = document.getElementById('wbCarto10Body');
+  if(!body) return;
+  body.innerHTML = WB_DATA.cartographie.rows.map((r,i)=>`
+    <tr data-i="${i}">
+      <td><input type="text" data-f="element" value="${escapeAttr(r.element)}" placeholder="ex : Mon entreprise, mon livre…"></td>
+      <td><input type="text" data-f="duree" value="${escapeAttr(r.duree)}" placeholder="ex : Quelques mois, des années…"></td>
+      <td><input type="text" data-f="pour" value="${escapeAttr(r.pour)}" placeholder="ex : Documenter, former un successeur…"></td>
+      <td><button class="wb-row-del" data-del="${i}" type="button">✕</button></td>
+    </tr>
+  `).join('') || `<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:16px;">Aucun élément listé pour l'instant.</td></tr>`;
+  body.querySelectorAll('input').forEach(inp=>{
+    const handler = ()=>{
+      const tr = inp.closest('tr'); const i = parseInt(tr.dataset.i);
+      WB_DATA.cartographie.rows[i][inp.dataset.f] = inp.value;
+      saveWbData(); updateWbToc();
+    };
+    inp.addEventListener('input', handler);
+  });
+  body.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      WB_DATA.cartographie.rows.splice(parseInt(btn.dataset.del),1);
+      renderCarto10Rows(); saveWbData(); updateWbToc();
+    });
+  });
+}
+
+function renderNiv10Autonomie(container){
+  const items = ["Documenter les processus clés de mon système","Identifier au moins une personne capable de prendre la relève","Mettre en place une gouvernance claire (qui décide quoi)","Créer des règles simples que d'autres peuvent suivre sans moi","Tester une absence prolongée pour voir ce qui tient","Sécuriser juridiquement ce qui doit l'être","Automatiser ce qui peut l'être encore davantage","Vérifier que l'information n'est pas seulement dans ma tête","Prévoir un plan si je devais m'arrêter du jour au lendemain","Revoir ce plan régulièrement, pas une seule fois"];
+  container.innerHTML = `<p class="wb-intro">L'autonomie totale, c'est quand ton système continue même si tu disparais du jour au lendemain. Coche ce que tu mets en place.</p><div class="wb-block">
+  ${items.map((label,i)=>`
+    <label class="wb-check-row">
+      <input type="checkbox" data-auto10-idx="${i}" ${WB_DATA.autonomieList[i]?'checked':''}>
+      <span class="wb-check-box">✓</span>
+      <span class="wb-label">${label}</span>
+    </label>
+  `).join('')}
+  </div>`;
+  container.querySelectorAll('input[data-auto10-idx]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.autonomieList[parseInt(inp.dataset.auto10Idx)] = inp.checked;
+      saveWbData(); updateWbToc();
+    });
+  });
+}
+
+function renderNiv10Succession(container){
+  const fields = [
+    {key:'qui', label:'Qui pourrait reprendre ou continuer ce que j\u2019ai construit ?'},
+    {key:'quoiSavoir', label:'Qu\u2019est-ce que cette personne doit absolument savoir ou avoir ?'},
+    {key:'commentTransmettre', label:'Comment est-ce que je transmets cette responsabilité progressivement, sans tout lâcher d\u2019un coup ?'}
+  ];
+  container.innerHTML = `<p class="wb-intro">La succession se prépare longtemps à l'avance, pas au dernier moment.</p>
+  ${fields.map(f=>`
+    <div class="wb-field">
+      <label>${f.label}</label>
+      <textarea class="wb-textarea" data-succ="${f.key}">${escapeHtml(WB_DATA.succession[f.key])}</textarea>
+    </div>
+  `).join('')}`;
+  container.querySelectorAll('textarea[data-succ]').forEach(ta=>{
+    ta.addEventListener('input', debounce(()=>{
+      WB_DATA.succession[ta.dataset.succ] = ta.value;
+      saveWbData(); updateWbToc();
+    }, 500));
+  });
+}
+
+function renderNiv10Patrimoine(container){
+  const items = ["Mettre à jour ou rédiger mon testament","Vérifier les bénéficiaires de mes contrats et assurances","Choisir une structure juridique adaptée à la transmission","Discuter ouvertement avec ma famille de mes intentions","Anticiper la fiscalité liée à la transmission","Centraliser les documents importants dans un endroit connu des proches","Prévoir un accès sécurisé à mes comptes et mots de passe en cas de besoin","Faire relire ma situation par un professionnel qualifié"];
+  container.innerHTML = `<p class="wb-intro">Sécuriser la transmission de ce que tu as construit, pas seulement le construire. Coche ce que tu as vérifié ou mis en place.</p><div class="wb-block">
+  ${items.map((label,i)=>`
+    <label class="wb-check-row">
+      <input type="checkbox" data-patri10-idx="${i}" ${WB_DATA.patrimoineList[i]?'checked':''}>
+      <span class="wb-check-box">✓</span>
+      <span class="wb-label">${label}</span>
+    </label>
+  `).join('')}
+  </div>`;
+  container.querySelectorAll('input[data-patri10-idx]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.patrimoineList[parseInt(inp.dataset.patri10Idx)] = inp.checked;
+      saveWbData(); updateWbToc();
+    });
+  });
+}
+
+function renderNiv10Oeuvre(container){
+  const fields = [
+    {key:'quoi', label:'Qu\u2019est-ce que je veux laisser derrière moi, qui ait vraiment du sens ?'},
+    {key:'forme', label:'Quelle forme concrète ça prend ? (livre, fondation, méthode, entreprise, œuvre…)'},
+    {key:'beneficiaires', label:'Qui en bénéficiera dans 10 ou 20 ans ?'}
+  ];
+  container.innerHTML = `<p class="wb-intro">Au-delà du patrimoine financier, il y a ce que tu construis qui a un sens propre.</p>
+  ${fields.map(f=>`
+    <div class="wb-field">
+      <label>${f.label}</label>
+      <textarea class="wb-textarea" data-oeuvre="${f.key}">${escapeHtml(WB_DATA.oeuvre[f.key])}</textarea>
+    </div>
+  `).join('')}`;
+  container.querySelectorAll('textarea[data-oeuvre]').forEach(ta=>{
+    ta.addEventListener('input', debounce(()=>{
+      WB_DATA.oeuvre[ta.dataset.oeuvre] = ta.value;
+      saveWbData(); updateWbToc();
+    }, 500));
+  });
+}
+
+function renderNiv10Suivi(container){
+  const rows = [
+    {key:'autonomiePct', label:"% de mon système autonome sans moi"},
+    {key:'valeurTransmise', label:'Valeur transmise / documentée'},
+    {key:'personnesFormees', label:'Personnes formées à prendre la relève'}
+  ];
+  const months = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc'];
+  container.innerHTML = `<p class="wb-intro">Suis la construction de ton héritage, mois après mois.</p>
+    <div class="wb-dash-table-wrap"><table class="wb-dash-table">
+      <thead><tr><th>Indicateur</th>${months.map(m=>`<th>${m}</th>`).join('')}</tr></thead>
+      <tbody>
+        ${rows.map(r=>`
+          <tr>
+            <td>${r.label}</td>
+            ${months.map((m,mi)=>`<td><input type="text" data-suivi10-row="${r.key}" data-suivi10-m="${mi}" value="${escapeAttr(WB_DATA.suiviHeritage[r.key][mi])}"></td>`).join('')}
+          </tr>
+        `).join('')}
+      </tbody>
+    </table></div>`;
+  container.querySelectorAll('input[data-suivi10-row]').forEach(inp=>{
+    inp.addEventListener('input', debounce(()=>{
+      WB_DATA.suiviHeritage[inp.dataset.suivi10Row][parseInt(inp.dataset.suivi10M)] = inp.value;
+      saveWbData(); updateWbToc();
+    }, 400));
+  });
+}
+
+function renderNiv10Lettre(container){
+  container.innerHTML = `<p class="wb-intro">Écris un message à ceux qui continueront après toi — ta famille, tes successeurs, ou toi-même dans très longtemps.</p>
+    <div class="wb-field"><label>Date</label><input type="text" class="wb-date" id="wbLettre10Date" placeholder="ex : 11 juillet 2026" value="${escapeAttr(WB_DATA.lettre.date)}"></div>
+    <div class="wb-field"><label>Ma lettre d'héritage</label>
+      <textarea class="wb-textarea" id="wbLettre10Texte" style="min-height:220px;" placeholder="Ce que j'ai construit, pourquoi, ce que j'espère que ça continuera à apporter…">${escapeHtml(WB_DATA.lettre.texte)}</textarea>
+    </div>`;
+  const dInp = document.getElementById('wbLettre10Date');
+  dInp.addEventListener('input', debounce(()=>{
+    WB_DATA.lettre.date = dInp.value; saveWbData(); updateWbToc();
+  }, 400));
+  const tInp = document.getElementById('wbLettre10Texte');
+  tInp.addEventListener('input', debounce(()=>{
+    WB_DATA.lettre.texte = tInp.value; saveWbData(); updateWbToc();
+  }, 400));
+}
+
+function renderNiv10Bilan(container){
+  const items = [
+    "Mon système pourrait fonctionner sans moi pendant un moment.",
+    "J'ai commencé à documenter ce que je sais.",
+    "J'ai identifié au moins une personne pour prendre la relève.",
+    "Ma transmission de patrimoine est anticipée, pas ignorée.",
+    "Je sais précisément ce que je veux laisser derrière moi.",
+    "Ce que je construis a un sens qui dépasse l'argent.",
+    "J'en ai parlé ouvertement avec mes proches.",
+    "Mon héritage progresse concrètement, pas seulement dans mes intentions.",
+    "Je continue à construire, pas seulement à protéger ce qui existe.",
+    "Je suis prêt pour le dernier niveau : la maîtrise totale (Niveau 11)."
+  ];
+  container.innerHTML = `<p class="wb-intro">Dernier point avant le niveau ultime. Coche ce qui est vrai aujourd'hui.</p>
+    <div class="wb-block">
+    ${items.map((label,i)=>`
+      <label class="wb-check-row">
+        <input type="checkbox" data-bilan10-idx="${i}" ${WB_DATA.bilanFinal[i]?'checked':''}>
+        <span class="wb-check-box">✓</span>
+        <span class="wb-label">${label}</span>
+      </label>
+    `).join('')}
+    </div>
+    <div class="wb-block-title" style="margin-top:10px;">Bilan <span class="wb-score" id="wbBilan10Score"></span></div>`;
+  updateBilan10Score();
+  container.querySelectorAll('input[data-bilan10-idx]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.bilanFinal[parseInt(inp.dataset.bilan10Idx)] = inp.checked;
+      updateBilan10Score();
+      saveWbData(); updateWbToc();
+    });
+  });
+}
+function updateBilan10Score(){
+  const score = WB_DATA.bilanFinal.filter(Boolean).length;
+  const el = document.getElementById('wbBilan10Score');
+  if(el) el.textContent = score + '/10';
+}
+
+const NIV10_SECTIONS = [
+  {id:'diagHeritage', title:'Mon diagnostic d\u2019héritage', render: renderNiv10Diag},
+  {id:'cartographie', title:'Exercice — Ce qui pourrait me survivre', render: renderNiv10Cartographie},
+  {id:'autonomieList', title:'Check-list — Rendre mon système 100% autonome', render: renderNiv10Autonomie},
+  {id:'succession', title:'Exercice — Mon plan de succession', render: renderNiv10Succession},
+  {id:'patrimoineList', title:'Check-list — Sécuriser mon patrimoine', render: renderNiv10Patrimoine},
+  {id:'oeuvre', title:'Exercice — Mon œuvre durable', render: renderNiv10Oeuvre},
+  {id:'suiviHeritage', title:'Suivi de mon héritage', render: renderNiv10Suivi},
+  {id:'lettre', title:'Ma lettre d\u2019héritage', render: renderNiv10Lettre},
+  {id:'bilanFinal', title:'Bilan final — Prêt pour le Niveau 11 ?', render: renderNiv10Bilan},
+];
+function niv10SectionHasData(id){
+  switch(id){
+    case 'diagHeritage': return Object.values(WB_DATA.diagHeritage).some(arr=>arr.some(Boolean));
+    case 'cartographie': return WB_DATA.cartographie.rows.length>0;
+    case 'autonomieList': return WB_DATA.autonomieList.some(Boolean);
+    case 'succession': return Object.values(WB_DATA.succession).some(v=>v && v.trim());
+    case 'patrimoineList': return WB_DATA.patrimoineList.some(Boolean);
+    case 'oeuvre': return Object.values(WB_DATA.oeuvre).some(v=>v && v.trim());
+    case 'suiviHeritage': return Object.values(WB_DATA.suiviHeritage).some(arr=>arr.some(v=>v && String(v).trim()));
+    case 'lettre': return !!(WB_DATA.lettre.texte && WB_DATA.lettre.texte.trim());
+    case 'bilanFinal': return WB_DATA.bilanFinal.some(Boolean);
+  }
+  return false;
+}
+function openWorkbook10(){
+  openWorkbookGeneric({
+    levelNum: 10,
+    defaultShape: NIV10_DEFAULT,
+    storageKey: NIV10_KEY,
+    lastSectionKey: NIV10_LAST_SECTION_KEY,
+    sections: NIV10_SECTIONS,
+    hasDataFn: niv10SectionHasData,
+    eyebrow: 'Niveau 10 · Héritage Éternel'
+  });
+}
+
+
+/* ========================================================================
+   NIVEAU 11 — "MAÎTRISE TOTALE — 5 SOURCES" (6 exercices)
+   Le niveau ultime. Pas de diagnostic d'ouverture ici — à ce stade, on ne
+   diagnostique plus, on constate et on consolide. Se termine par un badge
+   de réussite (pas par un "es-tu prêt pour le niveau suivant" : il n'y en
+   a pas, le Niveau 11 est le dernier).
+   ======================================================================== */
+const NIV11_KEY = 'systemeInvisible_niveau11';
+const NIV11_LAST_SECTION_KEY = 'systemeInvisible_niveau11_lastSection';
+const NIV11_DEFAULT = {
+  cinqSources: { rows: [] },
+  liberteList: Array(11).fill(false),
+  suiviMaitrise: {
+    revenuTotal:Array(12).fill(''), pourcentPassif:Array(12).fill(''), heuresSemaine:Array(12).fill(''), indiceLiberte:Array(12).fill('')
+  },
+  bilanParcours: { depart:'', changement:'', referais:'', message:'' },
+  entretienList: Array(10).fill(false)
+};
+
+function renderNiv11CinqSources(container){
+  container.innerHTML = `<p class="wb-intro">Le critère du Niveau 11 : cinq sources de revenus actives. Liste-les et vérifie combien sont vraiment autonomes.</p>
+    <div class="wb-table-wrap"><table class="wb-exp-table">
+      <thead><tr><th>Source</th><th>Type</th><th>Revenu (€/mois)</th><th>Autonome ?</th><th></th></tr></thead>
+      <tbody id="wbCinq11Body"></tbody>
+    </table></div>
+    <button class="wb-btn" id="wbCinq11Add" type="button">+ Ajouter une source</button>
+    <div class="wb-totals">
+      <div class="wb-total-item">Sources actives<b id="wbCinq11Nb">0</b></div>
+      <div class="wb-total-item">Revenu total<b id="wbCinq11Total">0 €</b></div>
+      <div class="wb-total-item">Dont autonome<b id="wbCinq11Auto">0 €</b></div>
+    </div>
+    <div id="wbCinq11Msg" style="margin-top:16px;"></div>`;
+  renderCinq11Rows();
+  document.getElementById('wbCinq11Add').addEventListener('click', ()=>{
+    WB_DATA.cinqSources.rows.push({source:'', type:'financier', revenu:'', autonome:false});
+    renderCinq11Rows(); saveWbData(); updateWbToc();
+  });
+}
+function renderCinq11Rows(){
+  const body = document.getElementById('wbCinq11Body');
+  if(!body) return;
+  const typeLabels = {financier:'Financier', immobilier:'Immobilier', business:'Business', digital:'Digital', reseau:'Réseau'};
+  body.innerHTML = WB_DATA.cinqSources.rows.map((r,i)=>`
+    <tr data-i="${i}">
+      <td><input type="text" data-f="source" value="${escapeAttr(r.source)}" placeholder="ex : ETF Monde, Blog, Location…"></td>
+      <td>
+        <select data-f="type" style="background:transparent;border:1px solid var(--line);border-radius:6px;color:var(--ink);font-size:.78rem;padding:3px 6px;">
+          ${Object.keys(typeLabels).map(t=>`<option value="${t}" ${r.type===t?'selected':''}>${typeLabels[t]}</option>`).join('')}
+        </select>
+      </td>
+      <td><input type="number" data-f="revenu" value="${escapeAttr(r.revenu)}" placeholder="0"></td>
+      <td style="text-align:center;"><input type="checkbox" data-f="autonome" ${r.autonome?'checked':''}></td>
+      <td><button class="wb-row-del" data-del="${i}" type="button">✕</button></td>
+    </tr>
+  `).join('') || `<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:16px;">Aucune source listée pour l'instant.</td></tr>`;
+  body.querySelectorAll('input,select').forEach(inp=>{
+    const handler = ()=>{
+      const tr = inp.closest('tr'); const i = parseInt(tr.dataset.i);
+      const val = inp.type==='checkbox' ? inp.checked : inp.value;
+      WB_DATA.cinqSources.rows[i][inp.dataset.f] = val;
+      updateCinq11Totals(); saveWbData(); updateWbToc();
+    };
+    inp.addEventListener('input', handler);
+    inp.addEventListener('change', handler);
+  });
+  body.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      WB_DATA.cinqSources.rows.splice(parseInt(btn.dataset.del),1);
+      renderCinq11Rows(); saveWbData(); updateWbToc();
+    });
+  });
+  updateCinq11Totals();
+}
+function updateCinq11Totals(){
+  const rows = WB_DATA.cinqSources.rows.filter(r=>r.source && r.source.trim());
+  const nb = rows.length;
+  const total = rows.reduce((s,r)=>s+(parseFloat(r.revenu)||0),0);
+  const autoTotal = rows.filter(r=>r.autonome).reduce((s,r)=>s+(parseFloat(r.revenu)||0),0);
+  const nbEl = document.getElementById('wbCinq11Nb'); if(nbEl) nbEl.textContent = nb;
+  const tEl = document.getElementById('wbCinq11Total'); if(tEl) tEl.textContent = total.toFixed(0) + ' €';
+  const aEl = document.getElementById('wbCinq11Auto'); if(aEl) aEl.textContent = autoTotal.toFixed(0) + ' €';
+  const msgEl = document.getElementById('wbCinq11Msg');
+  if(msgEl){
+    if(nb>=5){
+      msgEl.innerHTML = `<div style="padding:12px 16px;border-radius:10px;background:rgba(212,169,78,.1);border:1px solid rgba(212,169,78,.4);color:var(--gold-soft);font-size:.88rem;">🎉 5 sources actives ou plus — tu remplis le critère du Niveau 11.</div>`;
+    } else {
+      msgEl.innerHTML = `<div style="padding:12px 16px;border-radius:10px;background:rgba(255,255,255,.02);border:1px solid var(--line);color:var(--muted);font-size:.88rem;">Encore ${5-nb} source${5-nb>1?'s':''} pour atteindre le seuil des 5 sources actives.</div>`;
+    }
+  }
+}
+
+function renderNiv11Liberte(container){
+  const items = [
+    "J'ai repris conscience du système et cassé mes dépendances (Niveau 0).",
+    "Je contrôle mes revenus et mes dépenses (Niveau 1).",
+    "Ma base est stable : épargne, habitudes, environnement (Niveau 2).",
+    "Ma structure est sécurisée et mes priorités sont claires (Niveau 3).",
+    "J'ai construit de vrais actifs qui produisent sans moi (Niveau 4).",
+    "J'utilise des leviers pour multiplier, pas seulement ajouter (Niveau 5).",
+    "Mes flux sont optimisés — je sais ce qui rapporte vraiment (Niveau 6).",
+    "Je transmets ce que j'ai appris, et ça multiplie l'impact (Niveau 7).",
+    "Je pilote un système cohérent, pas des pièces éparpillées (Niveau 8).",
+    "Mon rayonnement dépasse mon cercle proche (Niveau 9).",
+    "Je construis quelque chose qui continuera après moi (Niveau 10)."
+  ];
+  container.innerHTML = `<p class="wb-intro">Le chemin parcouru, niveau par niveau. Coche ce qui est vrai pour toi aujourd'hui.</p>
+    <div class="wb-block">
+    ${items.map((label,i)=>`
+      <label class="wb-check-row">
+        <input type="checkbox" data-lib11-idx="${i}" ${WB_DATA.liberteList[i]?'checked':''}>
+        <span class="wb-check-box">✓</span>
+        <span class="wb-label">${label}</span>
+      </label>
+    `).join('')}
+    </div>
+    <div class="wb-block-title" style="margin-top:10px;">Liberté structurelle <span class="wb-score" id="wbLib11Score"></span></div>`;
+  updateLib11Score();
+  container.querySelectorAll('input[data-lib11-idx]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.liberteList[parseInt(inp.dataset.lib11Idx)] = inp.checked;
+      updateLib11Score();
+      saveWbData(); updateWbToc();
+    });
+  });
+}
+function updateLib11Score(){
+  const score = WB_DATA.liberteList.filter(Boolean).length;
+  const el = document.getElementById('wbLib11Score');
+  if(el) el.textContent = score + '/11';
+}
+
+function renderNiv11Suivi(container){
+  const rows = [
+    {key:'revenuTotal', label:'Revenu total'},
+    {key:'pourcentPassif', label:'% de revenu passif / autonome'},
+    {key:'heuresSemaine', label:'Heures travaillées / semaine'},
+    {key:'indiceLiberte', label:'Indice de liberté global'}
+  ];
+  const months = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc'];
+  container.innerHTML = `<p class="wb-intro">Le tableau de bord ultime : ta maîtrise totale, mois après mois.</p>
+    <div class="wb-dash-table-wrap"><table class="wb-dash-table">
+      <thead><tr><th>Indicateur</th>${months.map(m=>`<th>${m}</th>`).join('')}</tr></thead>
+      <tbody>
+        ${rows.map(r=>`
+          <tr>
+            <td>${r.label}</td>
+            ${months.map((m,mi)=>`<td><input type="text" data-suivi11-row="${r.key}" data-suivi11-m="${mi}" value="${escapeAttr(WB_DATA.suiviMaitrise[r.key][mi])}"></td>`).join('')}
+          </tr>
+        `).join('')}
+      </tbody>
+    </table></div>`;
+  container.querySelectorAll('input[data-suivi11-row]').forEach(inp=>{
+    inp.addEventListener('input', debounce(()=>{
+      WB_DATA.suiviMaitrise[inp.dataset.suivi11Row][parseInt(inp.dataset.suivi11M)] = inp.value;
+      saveWbData(); updateWbToc();
+    }, 400));
+  });
+}
+
+function renderNiv11Bilan(container){
+  const fields = [
+    {key:'depart', label:'D\u2019où suis-je parti, au Niveau 0 ?'},
+    {key:'changement', label:'Qu\u2019est-ce qui a le plus changé chez moi depuis ?'},
+    {key:'referais', label:'Qu\u2019est-ce que je ferais différemment si c\u2019était à refaire ?'},
+    {key:'message', label:'Qu\u2019est-ce que je dirais à la version de moi qui a commencé ce parcours ?'}
+  ];
+  container.innerHTML = `<p class="wb-intro">Prends un moment pour regarder le chemin parcouru dans son ensemble.</p>
+  ${fields.map(f=>`
+    <div class="wb-field">
+      <label>${f.label}</label>
+      <textarea class="wb-textarea" data-bp11="${f.key}">${escapeHtml(WB_DATA.bilanParcours[f.key])}</textarea>
+    </div>
+  `).join('')}`;
+  container.querySelectorAll('textarea[data-bp11]').forEach(ta=>{
+    ta.addEventListener('input', debounce(()=>{
+      WB_DATA.bilanParcours[ta.dataset.bp11] = ta.value;
+      saveWbData(); updateWbToc();
+    }, 500));
+  });
+}
+
+function renderNiv11Entretien(container){
+  const items = ["Je continue à revoir mes 5 sources régulièrement","Je ne relâche pas ma discipline sous prétexte d'avoir réussi","Je continue à apprendre et à me remettre en question","Je surveille les signaux faibles avant qu'ils deviennent des problèmes","Je garde une marge de sécurité, même à l'aise","Je continue à transmettre, pas seulement à profiter","Je célèbre mes progrès sans devenir complaisant","Je reste connecté à mon sens, pas seulement à mes résultats","Je m'entoure de gens qui me challengent, pas seulement qui me flattent","Je sais que la liberté s'entretient — elle ne se termine jamais vraiment"];
+  container.innerHTML = `<p class="wb-intro">La maîtrise ne se fige pas. Coche ce que tu t'engages à maintenir dans la durée.</p><div class="wb-block">
+  ${items.map((label,i)=>`
+    <label class="wb-check-row">
+      <input type="checkbox" data-ent11-idx="${i}" ${WB_DATA.entretienList[i]?'checked':''}>
+      <span class="wb-check-box">✓</span>
+      <span class="wb-label">${label}</span>
+    </label>
+  `).join('')}
+  </div>`;
+  container.querySelectorAll('input[data-ent11-idx]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      WB_DATA.entretienList[parseInt(inp.dataset.ent11Idx)] = inp.checked;
+      saveWbData(); updateWbToc();
+    });
+  });
+}
+
+function renderNiv11Badge(container){
+  container.innerHTML = `
+    <div style="text-align:center;padding:34px 10px 10px;">
+      <div style="font-size:3.4rem;margin-bottom:16px;">🏆</div>
+      <div style="font-family:var(--f-display);font-weight:700;font-size:1.5rem;color:var(--gold-soft);margin-bottom:12px;">Maîtrise Totale — Niveau 11/11</div>
+      <p style="max-width:520px;margin:0 auto 26px;color:#dfe4f0;font-size:.98rem;line-height:1.85;">
+        Si tu es arrivé jusqu'ici — vraiment arrivé, pas juste lu en diagonale — il y a de fortes chances que ta relation à l'argent, au temps et à la liberté ait déjà changé en profondeur.
+        <br><br>
+        Ce n'est plus une promesse. C'est une structure. La tienne.
+        <br><br>
+        Bienvenue dans le cercle très restreint de ceux qui ont fait le chemin en entier, du Niveau 0 au Niveau 11.
+      </p>
+      <div style="display:inline-block;padding:11px 24px;border:1px solid var(--gold);border-radius:99px;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-soft);background:rgba(212,169,78,.08);">
+        ✓ Parcours complet — 12 niveaux terminés
+      </div>
+    </div>
+  `;
+}
+
+const NIV11_SECTIONS = [
+  {id:'cinqSources', title:'Exercice — Mes 5 sources de revenus actifs', render: renderNiv11CinqSources},
+  {id:'liberteList', title:'Ma liberté structurelle — le chemin parcouru', render: renderNiv11Liberte},
+  {id:'suiviMaitrise', title:'Mon tableau de maîtrise totale', render: renderNiv11Suivi},
+  {id:'bilanParcours', title:'Mon bilan de parcours', render: renderNiv11Bilan},
+  {id:'entretienList', title:'Maintenir ma liberté dans le temps', render: renderNiv11Entretien},
+  {id:'badgeFinal', title:'🏆 Maîtrise Totale', render: renderNiv11Badge},
+];
+function niv11SectionHasData(id){
+  switch(id){
+    case 'cinqSources': return WB_DATA.cinqSources.rows.length>0;
+    case 'liberteList': return WB_DATA.liberteList.some(Boolean);
+    case 'suiviMaitrise': return Object.values(WB_DATA.suiviMaitrise).some(arr=>arr.some(v=>v && String(v).trim()));
+    case 'bilanParcours': return Object.values(WB_DATA.bilanParcours).some(v=>v && v.trim());
+    case 'entretienList': return WB_DATA.entretienList.some(Boolean);
+    case 'badgeFinal': return false;
+  }
+  return false;
+}
+function openWorkbook11(){
+  openWorkbookGeneric({
+    levelNum: 11,
+    defaultShape: NIV11_DEFAULT,
+    storageKey: NIV11_KEY,
+    lastSectionKey: NIV11_LAST_SECTION_KEY,
+    sections: NIV11_SECTIONS,
+    hasDataFn: niv11SectionHasData,
+    eyebrow: 'Niveau 11 · Maîtrise Totale'
+  });
+}
+
 
 
 
