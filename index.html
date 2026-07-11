@@ -358,9 +358,17 @@ h2{font-size:clamp(1.7rem,4.2vw,2.8rem);margin-bottom:16px;}
 .pack li{font-size:.9rem;color:var(--muted);padding:7px 0;display:flex;gap:10px;}
 .pack li::before{content:'✓';color:var(--gold);font-weight:700;}
 .pack .btn{width:100%;}
+.format-choice{display:flex;gap:14px;flex-wrap:wrap;width:100%;}
+.format-opt{flex:1;min-width:140px;border:1px solid var(--line);border-radius:12px;padding:14px 18px;cursor:pointer;
+  background:rgba(255,255,255,.02);transition:border-color .25s ease,background .25s ease,transform .2s ease;}
+.format-opt:hover{transform:translateY(-2px);border-color:rgba(212,169,78,.4);}
+.format-opt.active{border-color:var(--gold);background:rgba(212,169,78,.08);box-shadow:0 0 22px rgba(212,169,78,.15);}
+.format-opt .fo-label{font-family:var(--f-mono);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.format-opt.active .fo-label{color:var(--gold);}
+.format-opt .fo-price{font-family:var(--f-display);font-weight:700;font-size:1.25rem;color:var(--ink);}
 
 /* ===== ESPACE MEMBRE ===== */
-.member-wrap{display:grid;grid-template-columns:1fr 1.1fr;gap:56px;align-items:center;}
+.member-wrap{display:grid;grid-template-columns:1fr 1.1fr;gap:56px;align-items:start;}
 @media(max-width:960px){.member-wrap{grid-template-columns:1fr;}}
 .member-list{list-style:none;margin-top:26px;}
 .member-list li{display:flex;gap:14px;align-items:center;padding:11px 0;color:var(--muted);font-size:.94rem;border-bottom:1px solid rgba(96,165,250,.08);}
@@ -385,6 +393,14 @@ h2{font-size:clamp(1.7rem,4.2vw,2.8rem);margin-bottom:16px;}
 .dl.done{background:rgba(59,130,246,.18);border-color:var(--blue);color:var(--blue-glow);}
 .dl.now{background:rgba(212,169,78,.16);border-color:var(--gold);color:var(--gold);box-shadow:0 0 14px rgba(212,169,78,.25);}
 .dash-items{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.tome-status-list{display:flex;flex-direction:column;gap:9px;margin-bottom:20px;}
+.tome-status-item{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:11px 14px;border-radius:11px;background:rgba(255,255,255,.02);border:1px solid var(--line);}
+.tome-status-item .ts-label{font-size:.82rem;color:var(--ink);}
+.ts-badge{font-family:var(--f-mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;
+  padding:5px 12px;border-radius:99px;white-space:nowrap;flex-shrink:0;}
+.ts-badge.owned{background:rgba(212,169,78,.14);color:var(--gold-soft);border:1px solid rgba(212,169,78,.4);}
+.ts-badge.locked{background:rgba(139,150,181,.08);color:var(--muted);border:1px solid var(--line);}
 .di{border:1px solid var(--line);border-radius:8px;padding:12px;font-size:.72rem;color:var(--muted);}
 .di b{display:block;color:var(--ink);font-family:var(--f-display);font-size:.78rem;margin-bottom:2px;}
 .di .st{font-family:var(--f-mono);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;}
@@ -706,13 +722,11 @@ footer a:hover{color:var(--ink);}
   <section id="plan" class="reveal">
     <div class="plan">
       <div class="doc-stage">
-        <div class="d-title-ext">Plan de la<br>Liberté</div>
         <div class="doc-wrap">
           <div class="doc-halo"></div>
           <div class="doc" style="--doc-img:url(&quot;assets/plan-liberte.png&quot;)"></div>
           <div class="free-badge"><span class="p">100%</span><span class="l">Gratuit</span></div>
         </div>
-        <div class="d-sub-ext">Ton point de départ<br>vers une vraie liberté</div>
       </div>
       <div>
         <div class="eyebrow">Guide d'introduction offert</div>
@@ -745,17 +759,25 @@ footer a:hover{color:var(--ink);}
           <li>Les fondations de chacun des 12 niveaux</li>
           <li>Débloque l'accès au parcours</li>
         </ul>
-        <div class="hero-ctas" style="justify-content:flex-start;margin-top:26px;">
+        <div class="hero-ctas" style="justify-content:flex-start;margin-top:26px;flex-direction:column;align-items:flex-start;gap:16px;">
+          <div class="format-choice" id="formatChoice">
+            <div class="format-opt active" data-format="Numérique" data-price="27,99 €">
+              <div class="fo-label">Numérique</div>
+              <div class="fo-price">27,99 €</div>
+            </div>
+            <div class="format-opt" data-format="Physique" data-price="35,99 €">
+              <div class="fo-label">Physique</div>
+              <div class="fo-price">35,99 €</div>
+            </div>
+          </div>
           <button class="btn btn-gold" id="buyLivreBtn">Obtenir le livre — 27,99 €</button>
         </div>
       </div>
       <div class="doc-stage">
-        <div class="d-title-ext">Système<br>Invisible</div>
         <div class="doc-wrap">
           <div class="doc-halo"></div>
           <div class="doc" style="--doc-img:url(&quot;assets/systeme-invisible-livre.png&quot;)"></div>
         </div>
-        <div class="d-sub-ext">Le manuel du<br>parcours complet</div>
       </div>
     </div>
   </section>
@@ -803,7 +825,7 @@ footer a:hover{color:var(--ink);}
         <div class="p-sub">Livre + Niveau 0</div>
         <div class="p-price">49 €</div>
         <ul>
-          <li>Livre &quot;Système Invisible&quot;</li>
+          <li>Livre &quot;Système Invisible&quot; (ebook)</li>
           <li>Niveau 0</li>
           <li>Accès membre</li>
           <li>Bibliothèque numérique</li>
@@ -818,7 +840,7 @@ footer a:hover{color:var(--ink);}
         <div class="p-sub">Livre + Niveaux 0 à 5</div>
         <div class="p-price">369 €</div>
         <ul>
-          <li>Livre &quot;Système Invisible&quot;</li>
+          <li>Livre &quot;Système Invisible&quot; (ebook)</li>
           <li>Niveaux 0 à 5</li>
           <li>Bibliothèque complète</li>
           <li>Ressources exclusives</li>
@@ -908,8 +930,12 @@ footer a:hover{color:var(--ink);}
           <span class="dh-title">Bienvenue, membre 👋</span>
           <span class="dh-user">Progression niveaux</span>
         </div>
+        <div class="tome-status-item" id="dashBookStatus" style="margin-bottom:16px;">
+          <span class="ts-label">Système Invisible</span>
+          <span class="ts-badge locked" id="dashBookBadge">Non acheté · Verrouillé</span>
+        </div>
         <div class="progress-block">
-          <div class="p-row"><span>Parcours des 12 niveaux</span><b id="dashPct">0%</b></div>
+          <div class="p-row"><span>Parcours des 12 niveaux <em style="font-style:normal;color:var(--muted);font-size:.82em;">(Système Invisible requis)</em></span><b id="dashPct">0%</b></div>
           <div class="p-bar"><i id="dashBar" data-w="0%" style="--w:0%"></i></div>
         </div>
         <div id="dashTomes"></div>
@@ -1249,6 +1275,11 @@ function saveMemberData(){
 const MEMBER_DATA = loadMemberData();
 
 function renderDashboard(){
+  const bookBadge = document.getElementById('dashBookBadge');
+  if(bookBadge){
+    bookBadge.textContent = MEMBER_DATA.ownedBook ? 'Débloqué' : 'Non acheté · Verrouillé';
+    bookBadge.className = 'ts-badge ' + (MEMBER_DATA.ownedBook ? 'owned' : 'locked');
+  }
   const total = LEVELS.length; // 12
   const owned = MEMBER_DATA.ownedLevels.length;
   const pct = Math.round((owned/total)*100);
@@ -1273,14 +1304,13 @@ function renderDashboard(){
     {id:'III', label:'Tome III — La Transmission'},
   ];
   const dt = document.getElementById('dashTomes');
-  dt.innerHTML = TOMES.map(t=>{
+  dt.innerHTML = `<div class="tome-status-list">${TOMES.map(t=>{
     const has = MEMBER_DATA.ownedTomes.includes(t.id);
-    const p = has ? 100 : 0;
-    return `<div class="progress-block">
-      <div class="p-row"><span>${t.label}</span><b>${has ? 'Possédé' : 'Non acquis'}</b></div>
-      <div class="p-bar"><i class="${has?'gold':''}" data-w="${p}%"></i></div>
+    return `<div class="tome-status-item">
+      <span class="ts-label">${t.label}</span>
+      <span class="ts-badge ${has?'owned':'locked'}">${has ? 'Possédé' : 'Non acquis'}</span>
     </div>`;
-  }).join('');
+  }).join('')}</div>`;
 
   const items = document.getElementById('dashItems');
   const rows = [];
@@ -1767,12 +1797,24 @@ document.querySelectorAll('[data-pack]').forEach(btn=>{
   });
 });
 
+/* Choix du format du livre (Numérique / Physique) */
+let selectedFormat = 'Numérique';
+document.querySelectorAll('#formatChoice .format-opt').forEach(opt=>{
+  opt.addEventListener('click', ()=>{
+    document.querySelectorAll('#formatChoice .format-opt').forEach(o=>o.classList.remove('active'));
+    opt.classList.add('active');
+    selectedFormat = opt.dataset.format;
+    document.getElementById('buyLivreBtn').textContent = 'Obtenir le livre — ' + opt.dataset.price;
+  });
+});
+
 /* Achat du livre "Système Invisible" : débloque la progression dans les niveaux */
 document.getElementById('buyLivreBtn').addEventListener('click', ()=>{
   MEMBER_DATA.ownedBook = true;
   saveMemberData();
   renderDashboard();
-  showToast('<b>Livre débloqué :</b> Système Invisible<br><span style="color:var(--muted);font-size:.8em;">Lien Stripe à venir · tu peux maintenant progresser dans les niveaux.</span>');
+  const priceLabel = document.querySelector('#formatChoice .format-opt.active .fo-price').textContent;
+  showToast('<b>Livre débloqué :</b> Système Invisible (' + selectedFormat + ' — ' + priceLabel + ')<br><span style="color:var(--muted);font-size:.8em;">Lien Stripe à venir · tu peux maintenant progresser dans les niveaux.</span>');
 });
 
 /* Formulaire "Plan de la Liberté" */
