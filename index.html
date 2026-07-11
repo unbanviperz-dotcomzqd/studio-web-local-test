@@ -313,6 +313,10 @@ h2{font-size:clamp(1.7rem,4.2vw,2.8rem);margin-bottom:16px;}
 .level-card.gold .n-num{background:linear-gradient(180deg,var(--gold-soft),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent;}
 .level-card .n-name{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:6px;line-height:1.4;}
 .level-card .n-click{margin-top:10px;font-family:var(--f-mono);font-size:.56rem;letter-spacing:.1em;color:var(--blue-glow);text-transform:uppercase;opacity:.75;}
+.level-card .n-state{position:absolute;top:10px;right:10px;font-size:.85rem;z-index:2;}
+.level-card.owned{border-color:rgba(212,169,78,.55);}
+.level-card.owned .n-click{color:var(--gold-soft);}
+.level-card.locked{opacity:.55;}
 .why-levels{max-width:640px;margin:56px auto 0;text-align:center;color:var(--muted);font-size:.98rem;line-height:1.9;}
 .why-levels b{color:var(--ink);font-weight:600;}
 
@@ -506,7 +510,7 @@ h2{font-size:clamp(1.7rem,4.2vw,2.8rem);margin-bottom:16px;}
 .fin-quote{max-width:640px;margin:40px auto 0;text-align:center;position:relative;}
 .fin-quote-mark{font-family:var(--f-display);font-size:3rem;color:var(--gold);opacity:.4;line-height:0;}
 .fin-quote p{font-family:var(--f-display);font-size:1.05rem;line-height:1.7;color:#c8d2ea;margin-top:4px;}
-.my-products-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:18px;margin-top:44px;text-align:left;}
+.my-products-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:18px;margin-top:44px;text-align:left;}
 .my-product-card{
   --mp-img:none;
   position:relative;border-radius:14px;overflow:hidden;aspect-ratio:3/4;cursor:pointer;
@@ -526,7 +530,20 @@ h2{font-size:clamp(1.7rem,4.2vw,2.8rem);margin-bottom:16px;}
 .my-products-empty{max-width:480px;margin:44px auto 0;display:flex;flex-direction:column;align-items:center;gap:16px;}
 .my-products-empty .mpe-ic{font-size:2.4rem;color:var(--gold);opacity:.6;}
 .my-products-empty p{color:var(--muted);font-size:.92rem;line-height:1.7;}
-.my-products-grid.has-items + .my-products-empty{display:none;}
+#myProductsWrap.has-items + .my-products-empty{display:none;}
+.mp-section{margin-top:44px;text-align:left;}
+.mp-section-title{font-family:var(--f-display);font-weight:700;font-size:1.05rem;color:var(--ink);margin-bottom:18px;text-align:left;}
+.mp-levels-layout{display:grid;grid-template-columns:210px 1fr;gap:24px;align-items:start;}
+@media(max-width:760px){.mp-levels-layout{grid-template-columns:1fr;}}
+.mp-levels-grid{display:grid;grid-template-columns:repeat(3,86px);gap:9px;justify-content:start;margin-left:14px;padding-top:2px;}
+@media(max-width:640px){.mp-levels-grid{grid-template-columns:repeat(3,76px);margin-left:0;}}
+.mp-levels-grid .level-card{cursor:pointer;padding:8px 5px;border-radius:8px;}
+.mp-levels-grid .level-card .n-state{top:4px;right:4px;font-size:.6rem;}
+.mp-levels-grid .level-card .n-label{font-size:.4rem;letter-spacing:.14em;}
+.mp-levels-grid .level-card .n-num{font-size:1.05rem;}
+.mp-levels-grid .level-card .n-name{font-size:.44rem;margin-top:3px;line-height:1.25;}
+.mp-levels-grid .level-card .n-click{font-size:0;margin-top:0;}
+.mp-levels-grid .level-card:hover{transform:translateY(-3px) scale(1.04);}
 .manifesto{text-align:center;border:1px solid var(--line);border-radius:18px;
   background:linear-gradient(180deg,rgba(17,31,61,.7),rgba(10,18,38,.85));
   padding:clamp(50px,7vw,84px) clamp(24px,6vw,90px);position:relative;overflow:hidden;}
@@ -835,7 +852,7 @@ footer a:hover{color:var(--ink);}
         <a href="#" class="btn btn-blue" data-pack="decouverte">Commencer maintenant</a>
       </div>
       <div class="pack featured">
-        <div class="flag">Offre complète</div>
+        <div class="flag">Offre recommandée</div>
         <h3>Pack Évolution</h3>
         <div class="p-sub">Livre + Niveaux 0 à 5</div>
         <div class="p-price">369 €</div>
@@ -1111,7 +1128,19 @@ footer a:hover{color:var(--ink);}
     <div class="eyebrow">Ta bibliothèque</div>
     <h2>Mes produits</h2>
     <p class="lead">Retrouve ici tout ce que tu as acheté — clique pour y accéder directement.</p>
-    <div id="myProductsGrid" class="my-products-grid"></div>
+    <div id="myProductsWrap">
+      <div id="myProductsLevelsBlock" class="mp-section">
+        <h3 class="mp-section-title">Espace Niveaux</h3>
+        <div class="mp-levels-layout">
+          <div id="myProductsBook"></div>
+          <div id="myProductsLevelsGrid" class="mp-levels-grid"></div>
+        </div>
+      </div>
+      <div id="myProductsSagaBlock" class="mp-section">
+        <h3 class="mp-section-title">Espace Saga</h3>
+        <div id="myProductsSagaGrid" class="my-products-grid"></div>
+      </div>
+    </div>
     <div id="myProductsEmpty" class="my-products-empty">
       <span class="mpe-ic">◇</span>
       <p>Tu n'as encore aucun produit. Dès ton premier achat — un niveau, un tome, un pack — il apparaîtra ici et tu pourras y accéder directement depuis le site.</p>
@@ -1331,72 +1360,93 @@ function renderDashboard(){
   items.innerHTML = rows.join('');
 
   renderMyProducts();
+  if(typeof updateLevelCardsState === 'function') updateLevelCardsState();
 }
 
 /* ===== MES PRODUITS : grille des achats réels, cliquable pour accéder au contenu.
    Placeholder d'accès en attendant le vrai backend (Supabase) qui livrera le
    contenu (ebook PDF, page du niveau, etc.) une fois le paiement Stripe confirmé. */
 function renderMyProducts(){
-  const grid = document.getElementById('myProductsGrid');
+  const wrap = document.getElementById('myProductsWrap');
   const empty = document.getElementById('myProductsEmpty');
-  const cards = [];
+  const levelsBlock = document.getElementById('myProductsLevelsBlock');
+  const sagaBlock = document.getElementById('myProductsSagaBlock');
+  const bookSlot = document.getElementById('myProductsBook');
+  const levelsGridEl = document.getElementById('myProductsLevelsGrid');
+  const sagaGridEl = document.getElementById('myProductsSagaGrid');
 
-  MEMBER_DATA.ownedLevels.forEach(n=>{
-    const lvl = LEVELS.find(l=>l.n===n);
-    if(!lvl) return;
-    cards.push({
-      tag: 'Niveau ' + n,
-      name: lvl.name,
-      img: lvl.img,
-      onAccess: ()=>{ closeMyProductModalIfAny(); openLevelModal(lvl); }
-    });
-  });
+  const hasBook = MEMBER_DATA.ownedBook;
+  const hasLevels = MEMBER_DATA.ownedLevels.length > 0;
+  const hasTomes = MEMBER_DATA.ownedTomes.length > 0;
 
-  const TOME_TITLES = {
-    'I':  "Le Système Invisible",
-    'II': "Le Miroir Invisible",
-    'III':"L'Architecte Invisible",
-  };
-  MEMBER_DATA.ownedTomes.forEach(id=>{
-    cards.push({
-      tag: 'Tome ' + id,
-      name: TOME_TITLES[id] || ('Tome ' + id),
-      img: '',
-      onAccess: ()=>{ showToast('<b>Accès à ton ebook</b><br><span style="color:var(--muted);font-size:.8em;">Le lien de téléchargement sécurisé sera livré ici automatiquement après paiement (backend à venir).</span>'); }
-    });
-  });
-
-  if(MEMBER_DATA.ownedBook){
-    cards.push({
-      tag: 'Livre',
-      name: 'Système Invisible — Livre',
-      img: '',
-      onAccess: ()=>{ showToast('<b>Accès à ton livre</b><br><span style="color:var(--muted);font-size:.8em;">Le lien de téléchargement sécurisé sera livré ici automatiquement après paiement (backend à venir).</span>'); }
-    });
-  }
-
-  if(cards.length === 0){
-    grid.innerHTML = '';
-    grid.classList.remove('has-items');
+  if(!hasBook && !hasLevels && !hasTomes){
+    wrap.classList.remove('has-items');
     empty.style.display = 'flex';
     return;
   }
-
-  grid.classList.add('has-items');
+  wrap.classList.add('has-items');
   empty.style.display = 'none';
-  grid.innerHTML = cards.map((c,i)=>`
-    <div class="my-product-card" data-i="${i}" style="--mp-img:${c.img ? `url('${c.img}')` : 'none'}">
-      <span class="mp-tag">${c.tag}</span>
-      <div class="mp-name">${c.name}</div>
-      <span class="mp-access">Accéder</span>
-    </div>
-  `).join('');
 
-  grid.querySelectorAll('.my-product-card').forEach(el=>{
-    el.addEventListener('click', ()=>{
-      cards[parseInt(el.dataset.i)].onAccess();
+  /* --- Espace Niveaux : livre à gauche + niveaux possédés en carrés à droite --- */
+  if(hasBook || hasLevels){
+    levelsBlock.style.display = '';
+    bookSlot.innerHTML = hasBook ? `
+      <div class="my-product-card" id="mpBookCard" style="--mp-img:url('assets/systeme-invisible-livre.png');">
+        <span class="mp-tag">Livre</span>
+        <div class="mp-name">Système Invisible</div>
+        <span class="mp-access">Accéder</span>
+      </div>` : '';
+    if(hasBook){
+      document.getElementById('mpBookCard').addEventListener('click', ()=>{
+        showToast('<b>Accès à ton livre</b><br><span style="color:var(--muted);font-size:.8em;">Le lien de téléchargement sécurisé sera livré ici automatiquement après paiement (backend à venir).</span>');
+      });
+    }
+    const ownedSorted = [...MEMBER_DATA.ownedLevels].sort((a,b)=>a-b);
+    levelsGridEl.innerHTML = ownedSorted.map(n=>{
+      const lvl = LEVELS.find(l=>l.n===n);
+      if(!lvl) return '';
+      return `<div class="level-card owned${lvl.n>=9?' gold':''}" data-n="${lvl.n}" style="--lvl-img:${lvl.img?`url('${lvl.img}')`:'none'}">
+        <span class="n-state">✓</span><span class="n-label">Niveau</span><div class="n-num">${lvl.n}</div><div class="n-name">${lvl.name}</div><div class="n-click">Débloqué — voir</div>
+      </div>`;
+    }).join('');
+    levelsGridEl.querySelectorAll('.level-card').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const lvl = LEVELS.find(l=>l.n===parseInt(el.dataset.n));
+        if(lvl) openLevelModal(lvl);
+      });
     });
-  });
+  } else {
+    levelsBlock.style.display = 'none';
+  }
+
+  /* --- Espace Saga : tomes possédés --- */
+  if(hasTomes){
+    sagaBlock.style.display = '';
+    const TOME_TITLES = {
+      'I':  "Le Système Invisible",
+      'II': "Le Miroir Invisible",
+      'III':"L'Architecte Invisible",
+    };
+    const TOME_IMAGES = {
+      'I':  "assets/tome-1.png",
+      'II': "assets/tome-2.jpg",
+      'III':"assets/tome-3.jpg",
+    };
+    sagaGridEl.innerHTML = MEMBER_DATA.ownedTomes.map(id=>`
+      <div class="my-product-card" data-tome="${id}" style="--mp-img:url('${TOME_IMAGES[id] || ''}');">
+        <span class="mp-tag">Tome ${id}</span>
+        <div class="mp-name">${TOME_TITLES[id] || ('Tome ' + id)}</div>
+        <span class="mp-access">Accéder</span>
+      </div>
+    `).join('');
+    sagaGridEl.querySelectorAll('.my-product-card').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        showToast('<b>Accès à ton ebook</b><br><span style="color:var(--muted);font-size:.8em;">Le lien de téléchargement sécurisé sera livré ici automatiquement après paiement (backend à venir).</span>');
+      });
+    });
+  } else {
+    sagaBlock.style.display = 'none';
+  }
 }
 function closeMyProductModalIfAny(){ /* placeholder si besoin de fermer une modal parente plus tard */ }
 
@@ -1532,14 +1582,28 @@ const levelsGrid = document.getElementById('levelsGrid');
 LEVELS.forEach(lvl=>{
   const card = document.createElement('div');
   card.className = 'level-card' + (lvl.n>=9 ? ' gold' : '');
+  card.id = 'levelCard-' + lvl.n;
   card.style.setProperty('--lvl-img', lvl.img ? `url('${lvl.img}')` : 'none');
   card.tabIndex = 0;
   card.setAttribute('role','button');
-  card.innerHTML = `<span class="n-label">Niveau</span><div class="n-num">${lvl.n}</div><div class="n-name">${lvl.name}</div><div class="n-click">Voir le détail</div>`;
+  card.innerHTML = `<span class="n-state"></span><span class="n-label">Niveau</span><div class="n-num">${lvl.n}</div><div class="n-name">${lvl.name}</div><div class="n-click">Voir le détail</div>`;
   card.addEventListener('click', ()=>openLevelModal(lvl));
   card.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' ') openLevelModal(lvl); });
   levelsGrid.appendChild(card);
 });
+function updateLevelCardsState(){
+  LEVELS.forEach(lvl=>{
+    const card = document.getElementById('levelCard-' + lvl.n);
+    if(!card) return;
+    const owned = MEMBER_DATA.ownedLevels.includes(lvl.n);
+    const unlockable = MEMBER_DATA.ownedBook && (lvl.n===0 || MEMBER_DATA.ownedLevels.includes(lvl.n-1));
+    card.classList.toggle('owned', owned);
+    card.classList.toggle('locked', !owned && !unlockable);
+    const stateEl = card.querySelector('.n-state');
+    stateEl.textContent = owned ? '✓' : (!unlockable ? '🔒' : '');
+    card.querySelector('.n-click').textContent = owned ? 'Débloqué — voir' : (unlockable ? 'Voir le détail' : 'Verrouillé');
+  });
+}
 renderDashboard();
 
 const levelModal = document.getElementById('levelModal');
@@ -1550,12 +1614,19 @@ function openLevelModal(lvl){
   document.getElementById('modalDesc').textContent = lvl.desc;
   document.getElementById('modalPrice').textContent = lvl.price;
   document.getElementById('modalBuyBtn').onclick = ()=>{
-    /* Le livre "Système Invisible" débloque la progression : niveau 0 accessible
-       librement, mais les niveaux 1+ nécessitent d'avoir acquis le livre d'abord. */
-    if(lvl.n > 0 && !MEMBER_DATA.ownedBook){
-      showToast('<b>Niveau verrouillé</b><br><span style="color:var(--muted);font-size:.8em;">Débloque ta progression avec le livre « Système Invisible ».</span>');
+    /* Le livre "Système Invisible" est requis avant tout achat de niveau,
+       et chaque niveau ne peut être acheté que si tous les niveaux précédents
+       sont déjà possédés (progression strictement séquentielle). */
+    if(!MEMBER_DATA.ownedBook){
+      showToast('<b>Niveau verrouillé</b><br><span style="color:var(--muted);font-size:.8em;">Le livre « Système Invisible » est requis avant de débloquer les niveaux.</span>');
       closeLevelModal();
       document.getElementById('livre').scrollIntoView({behavior:'smooth'});
+      return;
+    }
+    const missingPrev = lvl.n > 0 && !MEMBER_DATA.ownedLevels.includes(lvl.n - 1);
+    if(missingPrev){
+      showToast('<b>Niveau verrouillé</b><br><span style="color:var(--muted);font-size:.8em;">Termine d\'abord le niveau ' + (lvl.n - 1) + ' avant de débloquer le niveau ' + lvl.n + '.</span>');
+      closeLevelModal();
       return;
     }
     if(!MEMBER_DATA.ownedLevels.includes(lvl.n)){
