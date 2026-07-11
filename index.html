@@ -806,7 +806,13 @@ body.reader-active .mobile-menu{display:none!important;}
 .avis-stats-sub{font-family:var(--f-mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:center;margin-top:2px;}
 .avis-stars{color:var(--gold);letter-spacing:2px;font-size:.92rem;white-space:nowrap;}
 .avis-stars .empty{color:rgba(139,150,181,.35);}
-.avis-cta-row{display:flex;justify-content:center;margin:34px 0 30px;}
+.avis-cta-row{display:flex;justify-content:center;margin:34px 0 18px;}
+.avis-sort-row{display:flex;align-items:center;justify-content:center;gap:10px;margin:0 0 30px;flex-wrap:wrap;}
+.avis-sort-row label{font-family:var(--f-mono);font-size:.62rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);}
+.avis-sort-select{background:rgba(5,9,20,.7);border:1px solid var(--line);border-radius:8px;padding:9px 34px 9px 14px;
+  color:var(--ink);font-family:var(--f-body);font-size:.82rem;appearance:none;-webkit-appearance:none;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%238b96b5'%3E%3Cpath d='M5.5 7.5l4.5 4.5 4.5-4.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;}
+.avis-sort-select:focus{border-color:var(--gold);outline:none;}
 .avis-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:20px;text-align:left;}
 .avis-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 22px 18px;
   display:flex;flex-direction:column;gap:12px;transition:transform .25s,box-shadow .25s,border-color .25s;}
@@ -824,7 +830,7 @@ body.reader-active .mobile-menu{display:none!important;}
 .avis-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;
   border-top:1px solid var(--line);padding-top:12px;font-family:var(--f-mono);font-size:.64rem;
   letter-spacing:.03em;text-transform:uppercase;color:var(--muted);}
-.avis-more-row{display:flex;justify-content:center;margin-top:30px;}
+.avis-more-row{display:flex;justify-content:center;gap:14px;margin-top:30px;flex-wrap:wrap;}
 .avis-shared-note{background:rgba(59,130,246,.08);border:1px solid rgba(96,165,250,.3);border-radius:10px;
   padding:10px 14px;font-size:.78rem;color:var(--blue-glow);line-height:1.6;margin:14px 0 6px;}
 .avis-form{display:flex;flex-direction:column;gap:16px;margin-top:8px;}
@@ -1522,10 +1528,20 @@ footer a:hover{color:var(--ink);}
       <button class="btn btn-gold" id="avisOpenBtn" type="button">+ Ajouter mon avis</button>
     </div>
 
+    <div class="avis-sort-row">
+      <label for="avisSortSelect">Trier par</label>
+      <select class="avis-sort-select" id="avisSortSelect">
+        <option value="default">Plus récents</option>
+        <option value="level-desc">Niveau 11 → Livre</option>
+        <option value="level-asc">Livre → Niveau 11</option>
+      </select>
+    </div>
+
     <div class="avis-grid" id="avisGrid"></div>
 
     <div class="avis-more-row">
       <button class="btn btn-ghost" id="avisMoreBtn" type="button">Voir plus d'avis</button>
+      <button class="btn btn-ghost" id="avisLessBtn" type="button" style="display:none;">Afficher moins</button>
     </div>
   </section>
 
@@ -1583,15 +1599,15 @@ footer a:hover{color:var(--ink);}
     <div class="faq" style="text-align:left;">
       <details>
         <summary>Le Plan de la Liberté est-il gratuit ?</summary>
-        <p>Oui recu par mail lors de l'inscription du Plan de la Liberté.</p>
+        <p>Oui, il est entièrement gratuit. Il est reçu par email lors de votre inscription au Plan de la Liberté, sans engagement ni frais cachés.</p>
       </details>
       <details>
         <summary>Comment accéder à mes achats ?</summary>
-        <p>Depuis l'onglet "Mes Produits" dans le menu.</p>
+        <p>Tous vos achats sont centralisés et accessibles à tout moment depuis l'onglet « Mes produits » de votre espace membre, en toute simplicité.</p>
       </details>
       <details>
         <summary>Les e-books peuvent-ils être téléchargés ?</summary>
-        <p>Non, Vos produits sont accessibles en ligne uniquement pour garantir la sécurité des utilisateurs.</p>
+        <p>Non, vos produits sont accessibles en ligne uniquement, afin de garantir la sécurité de vos contenus et la protection des utilisateurs.</p>
       </details>
       <details>
         <summary>Les paiements sont-ils sécurisés ?</summary>
@@ -7099,15 +7115,36 @@ let AVIS_USER = [];
 try{ AVIS_USER = JSON.parse(localStorage.getItem(AVIS_KEY) || '[]'); }catch(e){ AVIS_USER = []; }
 
 const AVIS_INITIAL_VISIBLE = 6;
+const AVIS_STEP = 3;
+let avisVisibleCount = AVIS_INITIAL_VISIBLE;
+let avisSortMode = 'default';
 const avisGrid = document.getElementById('avisGrid');
 const avisMoreBtn = document.getElementById('avisMoreBtn');
+const avisLessBtn = document.getElementById('avisLessBtn');
+const avisSortSelect = document.getElementById('avisSortSelect');
+
+/* niveau utilisé pour le tri : le livre (level null) est traité comme "en dessous" du Niveau 0 */
+function avisSortLevel(r){
+  return (r.level===null || r.level===undefined) ? -1 : r.level;
+}
+
+function avisSortedList(){
+  const all = [...AVIS_USER, ...AVIS_SEED];
+  if(avisSortMode==='level-desc'){
+    return all.slice().sort((a,b)=> avisSortLevel(b)-avisSortLevel(a));
+  }
+  if(avisSortMode==='level-asc'){
+    return all.slice().sort((a,b)=> avisSortLevel(a)-avisSortLevel(b));
+  }
+  return all; /* défaut : ordre d'origine (plus récents en tête côté avis utilisateurs) */
+}
 
 function renderAvis(){
-  const all = [...AVIS_USER, ...AVIS_SEED];
-  avisGrid.innerHTML = all.map((r,i)=>{
+  const all = avisSortedList();
+  const visible = all.slice(0, avisVisibleCount);
+  avisGrid.innerHTML = visible.map((r)=>{
     const meta = avisLevelMeta(r.level);
-    const hidden = i>=AVIS_INITIAL_VISIBLE ? ' hidden-extra' : '';
-    return '<div class="avis-card'+hidden+'">'
+    return '<div class="avis-card">'
       + '<div class="avis-card-head">'
       +   '<div class="avis-avatar">'+avisInitials(r.name)+'</div>'
       +   '<div class="avis-name-wrap">'
@@ -7124,13 +7161,24 @@ function renderAvis(){
   document.getElementById('avisAvgNum').textContent = avg.toFixed(1);
   document.getElementById('avisAvgStars').innerHTML = avisStarsHTML(Math.round(avg));
   document.getElementById('avisCountNum').textContent = all.length;
-  avisMoreBtn.style.display = all.length>AVIS_INITIAL_VISIBLE ? 'inline-flex' : 'none';
+  avisMoreBtn.style.display = avisVisibleCount<all.length ? 'inline-flex' : 'none';
+  avisLessBtn.style.display = avisVisibleCount>AVIS_INITIAL_VISIBLE ? 'inline-flex' : 'none';
 }
 renderAvis();
 
 avisMoreBtn.addEventListener('click', ()=>{
-  avisGrid.querySelectorAll('.avis-card.hidden-extra').forEach(el=>el.classList.remove('hidden-extra'));
-  avisMoreBtn.style.display='none';
+  avisVisibleCount += AVIS_STEP;
+  renderAvis();
+});
+avisLessBtn.addEventListener('click', ()=>{
+  avisVisibleCount = Math.max(AVIS_INITIAL_VISIBLE, avisVisibleCount-AVIS_STEP);
+  renderAvis();
+  document.getElementById('avis').scrollIntoView({behavior:'smooth', block:'start'});
+});
+avisSortSelect.addEventListener('change', ()=>{
+  avisSortMode = avisSortSelect.value;
+  avisVisibleCount = AVIS_INITIAL_VISIBLE;
+  renderAvis();
 });
 
 /* Sélecteur de niveau du formulaire, basé sur LEVELS déjà défini plus haut */
