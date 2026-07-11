@@ -976,9 +976,9 @@ footer a:hover{color:var(--ink);}
               <div class="fo-label">Numérique</div>
               <div class="fo-price">27,99 €</div>
             </div>
-            <div class="format-opt" data-format="Physique" data-price="35,99 €">
+            <div class="format-opt" data-format="Physique" data-price="42,99 €">
               <div class="fo-label">Physique</div>
-              <div class="fo-price">35,99 €</div>
+              <div class="fo-price">42,99 €</div>
             </div>
           </div>
           <button class="btn btn-gold" id="buyLivreBtn">Obtenir le livre — 27,99 €</button>
@@ -1183,7 +1183,7 @@ footer a:hover{color:var(--ink);}
         </div>
         <div class="tome-buy">
           <div class="tb-row"><span class="tb-label">Numérique</span><span class="tb-price"><s>25,99€</s>17,99€<span class="promo-tag">Promo</span></span><button class="tb-buy" data-buy="Tome I — Numérique">Acheter</button></div>
-          <div class="tb-row"><span class="tb-label">Papier</span><span class="tb-price"><s>32,99€</s>24,99€<span class="promo-tag">Promo</span></span><button class="tb-buy" data-buy="Tome I — Papier">Acheter</button></div>
+          <div class="tb-row"><span class="tb-label">Papier</span><span class="tb-price"><s>39,99€</s>31,99€<span class="promo-tag">Promo</span></span><button class="tb-buy" data-buy="Tome I — Papier">Acheter</button></div>
         </div>
       </div>
       <div class="tome-col">
@@ -1194,7 +1194,7 @@ footer a:hover{color:var(--ink);}
         </div>
         <div class="tome-buy">
           <div class="tb-row"><span class="tb-label">Numérique</span><span class="tb-price"><s>25,99€</s>17,99€<span class="promo-tag">Promo</span></span><button class="tb-buy" data-buy="Tome II — Numérique">Acheter</button></div>
-          <div class="tb-row"><span class="tb-label">Papier</span><span class="tb-price"><s>32,99€</s>24,99€<span class="promo-tag">Promo</span></span><button class="tb-buy" data-buy="Tome II — Papier">Acheter</button></div>
+          <div class="tb-row"><span class="tb-label">Papier</span><span class="tb-price"><s>39,99€</s>31,99€<span class="promo-tag">Promo</span></span><button class="tb-buy" data-buy="Tome II — Papier">Acheter</button></div>
         </div>
       </div>
       <div class="tome-col">
@@ -1205,7 +1205,7 @@ footer a:hover{color:var(--ink);}
         </div>
         <div class="tome-buy">
           <div class="tb-row"><span class="tb-label">Numérique</span><span class="tb-price"><s>25,99€</s>17,99€<span class="promo-tag">Promo</span></span><button class="tb-buy" data-buy="Tome III — Numérique">Acheter</button></div>
-          <div class="tb-row"><span class="tb-label">Papier</span><span class="tb-price"><s>32,99€</s>24,99€<span class="promo-tag">Promo</span></span><button class="tb-buy" data-buy="Tome III — Papier">Acheter</button></div>
+          <div class="tb-row"><span class="tb-label">Papier</span><span class="tb-price"><s>39,99€</s>31,99€<span class="promo-tag">Promo</span></span><button class="tb-buy" data-buy="Tome III — Papier">Acheter</button></div>
         </div>
       </div>
     </div>
@@ -1217,7 +1217,7 @@ footer a:hover{color:var(--ink);}
       </div>
       <div class="sb-prices">
         <div class="sb-block"><div class="sb-l">Numérique</div><div class="sb-p"><s>54,99€</s>45,99€</div><button class="btn btn-gold" data-buy="Trilogie — Numérique">Acheter</button></div>
-        <div class="sb-block"><div class="sb-l">Papier</div><div class="sb-p"><s>84,99€</s>69,99€</div><button class="btn btn-ghost" data-buy="Trilogie — Papier">Acheter</button></div>
+        <div class="sb-block"><div class="sb-l">Papier</div><div class="sb-p"><s>91,99€</s>76,99€</div><button class="btn btn-ghost" data-buy="Trilogie — Papier">Acheter</button></div>
       </div>
     </div>
   </section>
@@ -6585,7 +6585,7 @@ function openInvoicesModal(){
   ['I','II','III'].forEach(id=>{
     if(MEMBER_DATA.ownedTomes.includes(id)){
       const fmt = MEMBER_DATA.tomeFormats[id] === 'Papier' ? 'Papier' : 'Numérique';
-      rows.push({ name: TOME_LABELS[id] + ' (' + fmt + ')', price: fmt==='Papier' ? '24,99 €' : '17,99 €', refId: ref() });
+      rows.push({ name: TOME_LABELS[id] + ' (' + fmt + ')', price: fmt==='Papier' ? '31,99 €' : '17,99 €', refId: ref() });
     }
   });
   [...MEMBER_DATA.ownedLevels].sort((a,b)=>a-b).forEach(nlvl=>{
