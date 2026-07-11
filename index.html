@@ -1,0 +1,1798 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Système Invisible — Observer. Comprendre. Construire.</title>
+<meta name="description" content="Un univers où la fiction rencontre la réflexion. Un parcours où chaque lecture devient une compétence. Une méthode où chaque compétence construit une liberté durable.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90' fill='%23d4a94e'%3E∞%3C/text%3E%3C/svg%3E">
+<meta property="og:title" content="Système Invisible — Observer. Comprendre. Construire.">
+<meta property="og:description" content="Un univers où la fiction rencontre la réflexion. Un parcours où chaque lecture devient une compétence, une méthode où chaque compétence construit une liberté durable.">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050914;
+  --bg2:#0a1226;
+  --panel:#0d1830;
+  --panel2:#111f3d;
+  --blue:#3b82f6;
+  --blue-glow:#60a5fa;
+  --gold:#d4a94e;
+  --gold-soft:#e8c87a;
+  --ink:#eef2fb;
+  --muted:#8b96b5;
+  --line:rgba(96,165,250,.18);
+  --f-display:'Space Grotesk',sans-serif;
+  --f-body:'Inter',sans-serif;
+  --f-mono:'DM Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);overflow-x:hidden;line-height:1.65;}
+
+/* ===== FOND : VILLE / LIGNES / TUNNEL ===== */
+.bg-scene{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+.stars{position:absolute;inset:0;background-image:
+  radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,.5) 0, transparent 100%),
+  radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,.4) 0, transparent 100%),
+  radial-gradient(1.5px 1.5px at 80% 20%, rgba(96,165,250,.6) 0, transparent 100%),
+  radial-gradient(1px 1px at 40% 80%, rgba(255,255,255,.3) 0, transparent 100%),
+  radial-gradient(1px 1px at 90% 60%, rgba(212,169,78,.5) 0, transparent 100%),
+  radial-gradient(1.5px 1.5px at 10% 90%, rgba(96,165,250,.4) 0, transparent 100%);
+  background-size:600px 600px;opacity:.8;}
+.tunnel-grid{position:absolute;left:50%;top:58%;width:220vmax;height:220vmax;
+  transform:translate(-50%,-50%) perspective(600px) rotateX(72deg);
+  background-image:
+    linear-gradient(rgba(59,130,246,.13) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59,130,246,.13) 1px, transparent 1px);
+  background-size:70px 70px;
+  mask-image:radial-gradient(ellipse at center, black 0%, transparent 60%);
+  -webkit-mask-image:radial-gradient(ellipse at center, black 0%, transparent 60%);}
+.net{position:absolute;inset:0;}
+.net svg{width:100%;height:100%;opacity:.35;}
+.net line{stroke:url(#lg);stroke-width:1;}
+.net circle{fill:var(--blue-glow);}
+.glow-orb{position:absolute;border-radius:50%;filter:blur(90px);opacity:.22;}
+.glow-orb.b{width:520px;height:520px;background:var(--blue);top:-160px;right:-120px;}
+.glow-orb.g{width:420px;height:420px;background:var(--gold);bottom:-140px;left:-120px;opacity:.12;}
+
+main,header,footer{position:relative;z-index:1;}
+
+/* ===== NAV ===== */
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;
+  padding:15px clamp(20px,5vw,60px);background:rgba(5,9,20,.8);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);}
+.logo{display:flex;align-items:center;gap:11px;font-family:var(--f-display);font-weight:700;letter-spacing:.07em;font-size:.9rem;text-transform:uppercase;color:var(--ink);text-decoration:none;}
+.logo .inf{font-size:1.45rem;color:var(--gold);line-height:1;transform:translateY(-1px);}
+.logo-img{width:34px;height:34px;object-fit:contain;flex-shrink:0;}
+.nav-links{display:flex;gap:clamp(2px,.6vw,8px);align-items:center;}
+.nav-links a:not(.btn){position:relative;display:flex;align-items:center;gap:7px;color:var(--muted);text-decoration:none;font-size:.78rem;font-weight:500;letter-spacing:.03em;
+  padding:9px 13px;border-radius:22px;overflow:hidden;transition:color .3s ease,background .3s ease,transform .3s ease;}
+.nav-links a:not(.btn)::before{content:'';position:absolute;inset:0;border-radius:22px;background:radial-gradient(circle at 30% 50%,rgba(96,165,250,.16),transparent 70%);
+  opacity:0;transition:opacity .35s ease;}
+.nav-links a:not(.btn)::after{content:'';position:absolute;left:13px;right:13px;bottom:5px;height:1px;background:linear-gradient(90deg,var(--blue-glow),var(--gold));
+  transform:scaleX(0);transform-origin:left;transition:transform .4s cubic-bezier(.22,1,.36,1);}
+.nav-links a:not(.btn):hover{color:var(--ink);background:rgba(96,165,250,.07);transform:translateY(-1px);}
+.nav-links a:not(.btn):hover::before{opacity:1;}
+.nav-links a:not(.btn):hover::after{transform:scaleX(1);}
+.nav-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;background:currentColor;box-shadow:0 0 7px currentColor;transition:transform .3s ease;}
+.nav-links a:hover .nav-dot{transform:scale(1.5);}
+.nav-dot.free{color:var(--gold);}
+.nav-dot.book{color:var(--blue-glow);}
+.nav-dot.saga{color:#b39bfa;}
+.nav-dot.member{color:var(--gold-soft);}
+.nav-dot.shop{color:var(--blue);}
+.nav-dot.manifesto{color:#f0c674;}
+.nav-dot.faq{color:var(--muted);}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:var(--f-display);font-weight:600;font-size:.85rem;letter-spacing:.04em;
+  padding:13px 26px;border-radius:6px;text-decoration:none;cursor:pointer;border:none;transition:transform .25s ease, box-shadow .25s ease;}
+.btn:hover{transform:translateY(-2px);}
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold-soft));color:#0a0f1e;box-shadow:0 0 24px rgba(212,169,78,.25);}
+.btn-gold:hover{box-shadow:0 6px 32px rgba(212,169,78,.45);}
+.btn-ghost{background:transparent;color:var(--blue-glow);border:1px solid var(--line);}
+.btn-ghost:hover{border-color:var(--blue);box-shadow:0 0 20px rgba(59,130,246,.2);}
+.btn-blue{background:linear-gradient(135deg,#2563eb,var(--blue));color:#fff;box-shadow:0 0 20px rgba(59,130,246,.3);}
+.nav-burger{display:none;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:6px;}
+.nav-burger span{width:22px;height:2px;background:var(--ink);transition:transform .3s,opacity .3s;}
+.nav-burger.open span:nth-child(1){transform:translateY(7px) rotate(45deg);}
+.nav-burger.open span:nth-child(2){opacity:0;}
+.nav-burger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
+@media(max-width:900px){
+  .nav-links a:not(.btn){display:none;}
+  .nav-burger{display:flex;}
+  .nav-links{gap:12px;}
+  .mobile-menu{position:fixed;top:60px;left:0;right:0;z-index:99;background:rgba(5,9,20,.97);backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--line);max-height:0;overflow:hidden;transition:max-height .35s ease;}
+  .mobile-menu.open{max-height:400px;}
+  .mobile-menu a{display:block;padding:16px 24px;color:var(--muted);text-decoration:none;font-size:.9rem;
+    border-bottom:1px solid rgba(96,165,250,.08);}
+  .mobile-menu a:hover{color:var(--ink);}
+}
+@media(min-width:901px){.mobile-menu{display:none;}}
+
+/* ===== SECTIONS / REVEAL ===== */
+section{padding:clamp(80px,11vh,130px) clamp(20px,6vw,80px);max-width:1240px;margin:0 auto;}
+.reveal{opacity:1;transform:none;}
+.js .reveal{opacity:0;transform:translateY(50px) scale(.96);
+  transition:opacity .9s cubic-bezier(.16,1,.3,1), transform .9s cubic-bezier(.16,1,.3,1);}
+.js .reveal.in{opacity:1;transform:translateY(0) scale(1);}
+.eyebrow{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:12px;margin-bottom:18px;}
+.eyebrow::before{content:'';width:28px;height:1px;background:var(--gold);}
+h1,h2,h3{font-family:var(--f-display);line-height:1.08;font-weight:700;}
+h2{font-size:clamp(1.7rem,4.2vw,2.8rem);margin-bottom:16px;}
+.lead{color:var(--muted);max-width:58ch;font-size:1.02rem;}
+.center{text-align:center;}
+.center .eyebrow{justify-content:center;}
+.center .eyebrow::before{display:none;}
+.center .lead{margin:0 auto;}
+
+/* ===== HERO ===== */
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding-top:130px;position:relative;overflow:hidden;
+  max-width:none;width:100%;}
+.hero-inner{position:relative;z-index:2;max-width:1240px;width:100%;padding:0 clamp(20px,6vw,80px);display:flex;flex-direction:column;align-items:center;}
+.hero-bg{position:absolute;inset:0;z-index:0;background-image:var(--hero-img);background-size:cover;background-position:center 30%;
+  filter:saturate(1.05) brightness(.92);animation:heroKenBurns 26s ease-in-out infinite alternate;}
+@keyframes heroKenBurns{from{transform:scale(1.05);}to{transform:scale(1.14);}}
+.hero-bg-overlay{position:absolute;inset:0;z-index:1;
+  background:
+    linear-gradient(180deg, rgba(5,9,20,.55) 0%, rgba(5,9,20,.35) 32%, rgba(5,9,20,.72) 72%, var(--bg) 100%),
+    radial-gradient(ellipse at center 65%, rgba(212,169,78,.10), transparent 60%);}
+.forces{font-family:var(--f-mono);font-size:clamp(.72rem,1.6vw,.85rem);letter-spacing:.34em;text-transform:uppercase;color:var(--blue-glow);
+  display:flex;flex-wrap:wrap;justify-content:center;gap:10px 26px;margin:26px 0;}
+.forces span{opacity:0;animation:forceIn .7s ease forwards;}
+.forces span:nth-child(1){animation-delay:.4s}.forces span:nth-child(2){animation-delay:.8s}
+.forces span:nth-child(3){animation-delay:1.2s}.forces span:nth-child(4){animation-delay:1.6s}
+.forces span:nth-child(5){animation-delay:2s}
+@keyframes forceIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+.no-js .forces span{opacity:1;animation:none;}
+.hero h1{font-size:clamp(1.5rem,4.2vw,2.7rem);max-width:22ch;font-weight:600;color:#dfe6f5;}
+.hero .brand{font-size:clamp(2.6rem,7.5vw,5.4rem);margin:18px 0 6px;letter-spacing:.02em;}
+.hero .brand .w{background:linear-gradient(180deg,#fff,#b9c6e4);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.hero .brand .b{background:linear-gradient(135deg,var(--blue-glow),#2563eb);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.hero .triptyque{color:var(--muted);max-width:62ch;margin:22px auto 36px;font-size:1.04rem;}
+.hero .triptyque b{color:var(--ink);font-weight:600;}
+.hero-ctas{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;}
+
+/* ===== POURQUOI ===== */
+.why{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center;}
+@media(max-width:900px){.why{grid-template-columns:1fr;}}
+.why .apprend{font-family:var(--f-display);font-size:clamp(1.3rem,3vw,1.9rem);line-height:1.5;font-weight:500;color:#c8d2ea;}
+.why .apprend em{font-style:normal;color:var(--muted);display:block;font-size:.88em;}
+.why .apprend .flip{color:var(--gold);display:block;margin-top:14px;}
+.conviction{border-left:2px solid var(--gold);padding-left:24px;margin:26px 0;font-family:var(--f-display);font-size:1.12rem;line-height:1.6;color:var(--ink);}
+
+/* ===== DIAGNOSTIC (produit Système Invisible) ===== */
+.diag{display:grid;grid-template-columns:1fr .9fr;gap:56px;align-items:center;
+  border:1px solid var(--line);border-radius:18px;background:linear-gradient(135deg,rgba(10,18,38,.9),rgba(17,31,61,.7));
+  padding:clamp(34px,5vw,60px);}
+@media(max-width:900px){.diag{grid-template-columns:1fr;}}
+.diag-note{margin-top:20px;font-size:.84rem;color:var(--muted);border-left:2px solid var(--blue);padding-left:16px;}
+.diag-note b{color:var(--ink);}
+.gauge-stage{display:flex;justify-content:center;align-items:center;position:relative;min-height:320px;}
+.gauge-halo{position:absolute;width:280px;height:280px;border-radius:50%;
+  background:radial-gradient(circle,rgba(212,169,78,.22),rgba(59,130,246,.1) 55%,transparent 75%);
+  filter:blur(24px);animation:gaugePulse 3.6s ease-in-out infinite;}
+@keyframes gaugePulse{0%,100%{transform:scale(1);opacity:.7;}50%{transform:scale(1.12);opacity:1;}}
+.gauge{position:relative;width:240px;height:240px;}
+.gauge-ring{position:absolute;inset:-16px;border-radius:50%;
+  border:1px dashed rgba(212,169,78,.35);animation:gaugeSpin 22s linear infinite;}
+.gauge-ring::before,.gauge-ring::after{content:'';position:absolute;width:6px;height:6px;border-radius:50%;background:var(--gold);box-shadow:0 0 10px var(--gold);}
+.gauge-ring::before{top:-3px;left:50%;transform:translateX(-50%);}
+.gauge-ring::after{bottom:-3px;left:50%;transform:translateX(-50%);}
+@keyframes gaugeSpin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+.gauge svg{width:100%;height:100%;transform:rotate(-90deg);position:relative;z-index:1;}
+.gauge circle{fill:none;stroke-width:11;}
+.gauge .track{stroke:rgba(96,165,250,.12);}
+.gauge .fill{stroke:url(#gaugeGrad);stroke-linecap:round;stroke-dasharray:565;stroke-dashoffset:565;
+  transition:stroke-dashoffset 1.8s cubic-bezier(.16,1,.3,1) .3s;
+  filter:drop-shadow(0 0 10px rgba(212,169,78,.55));}
+.js .gauge .fill.in{stroke-dashoffset:290;}
+.no-js .gauge .fill{stroke-dashoffset:290;}
+.gauge-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;z-index:2;}
+.gauge-center .gv{font-family:var(--f-display);font-size:3.2rem;font-weight:700;line-height:1;
+  background:linear-gradient(135deg,var(--gold-soft),var(--gold) 60%,var(--blue-glow));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 18px rgba(212,169,78,.35));
+  animation:gaugeGlow 3s ease-in-out infinite;}
+@keyframes gaugeGlow{0%,100%{filter:drop-shadow(0 0 12px rgba(212,169,78,.3));}50%{filter:drop-shadow(0 0 24px rgba(212,169,78,.55));}}
+.gauge-center .gl{font-family:var(--f-mono);font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-top:4px;}
+.gauge-center .gl::before{content:'◆ ';color:var(--gold);}
+
+/* ===== PLAN LIBERTÉ ===== */
+.plan{display:grid;grid-template-columns:.9fr 1.1fr;gap:60px;align-items:center;
+  border:1px solid var(--line);border-radius:18px;background:linear-gradient(135deg,rgba(17,31,61,.85),rgba(10,18,38,.9));
+  padding:clamp(34px,5vw,60px);}
+@media(max-width:900px){.plan{grid-template-columns:1fr;}}
+.doc-stage{display:flex;justify-content:center;position:relative;min-height:300px;align-items:center;}
+.doc-halo{position:absolute;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(96,165,250,.3),transparent 70%);filter:blur(16px);animation:pulse 4.5s ease-in-out infinite;}
+@keyframes pulse{50%{transform:scale(1.1);opacity:.8;}}
+.doc{position:relative;width:190px;aspect-ratio:3/4;border-radius:8px;
+  background:linear-gradient(160deg,#13234a,#081124);border:1px solid rgba(96,165,250,.4);
+  box-shadow:-14px 18px 44px rgba(0,0,0,.6), 0 0 40px rgba(59,130,246,.15);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;
+  animation:floaty 6s ease-in-out infinite;}
+@keyframes floaty{50%{transform:translateY(-14px) rotateZ(-1deg);}}
+.doc .d-title{font-family:var(--f-display);font-weight:700;font-size:1.25rem;text-align:center;line-height:1.15;color:#e9edf7;}
+.doc .d-inf{font-size:2rem;color:var(--blue-glow);}
+.doc .d-sub{font-family:var(--f-mono);font-size:.55rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);text-align:center;line-height:1.8;}
+.free-badge{position:absolute;left:8%;bottom:10%;background:rgba(5,9,20,.9);border:1px solid var(--gold);border-radius:50%;
+  width:92px;height:92px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-family:var(--f-display);box-shadow:0 0 26px rgba(212,169,78,.25);}
+.free-badge .p{font-size:1rem;font-weight:700;color:var(--gold);}
+.free-badge .l{font-size:.52rem;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;}
+.plan ul{list-style:none;margin:22px 0 28px;}
+.plan li{padding:8px 0;color:var(--muted);font-size:.94rem;display:flex;gap:10px;}
+.plan li::before{content:'✓';color:var(--gold);font-weight:700;}
+.form-row{display:flex;flex-direction:column;gap:12px;max-width:400px;}
+.form-row input{background:rgba(5,9,20,.7);border:1px solid var(--line);border-radius:6px;padding:13px 16px;
+  color:var(--ink);font-family:var(--f-body);font-size:.9rem;outline:none;transition:border-color .25s;}
+.form-row input:focus{border-color:var(--blue);}
+.form-row input::placeholder{color:var(--muted);}
+.form-note{font-size:.72rem;color:var(--muted);margin-top:10px;}
+
+/* ===== SAGA ===== */
+.saga-head{max-width:640px;margin:0 auto;text-align:center;}
+.saga-punch{font-family:var(--f-display);font-size:clamp(1.1rem,2.6vw,1.5rem);line-height:1.7;margin:14px 0 6px;color:#c8d2ea;}
+.saga-punch .q{color:var(--gold);display:block;margin-top:10px;font-size:1.1em;}
+.saga-covers{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px;margin:52px 0;align-items:start;}
+.tome-col{display:flex;flex-direction:column;gap:14px;}
+
+/* Carte image pure : titre centré, fond image (à remplacer via --tome-img) */
+.tome-card{
+  --tome-img: none; /* <== COLLE ICI L'URL DE L'IMAGE : url('...jpg') */
+  position:relative;border-radius:14px;overflow:hidden;aspect-ratio:3/4;
+  border:1px solid rgba(96,165,250,.3);box-shadow:0 20px 50px rgba(0,0,0,.5);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;
+  transition:transform .35s cubic-bezier(.16,1,.3,1);}
+.tome-card:hover{transform:translateY(-8px);}
+.tome-card::before{ /* fond : image si fournie, sinon dégradé de secours */
+  content:'';position:absolute;inset:0;z-index:0;
+  background-image:var(--tome-img);background-size:cover;background-position:center;}
+.tome-card.c1::before{background-image:var(--tome-img),linear-gradient(165deg,#16244a,#050b1a);}
+.tome-card.c2::before{background-image:var(--tome-img),linear-gradient(165deg,#3a2a10,#140c03);}
+.tome-card.c3::before{background-image:var(--tome-img),linear-gradient(165deg,#2a1a4a,#0a0618);}
+.tome-card::after{content:'';position:absolute;inset:0;z-index:1;
+  background:linear-gradient(180deg,rgba(5,9,20,.1) 0%,rgba(5,9,20,.35) 55%,rgba(5,9,20,.75) 100%);}
+.tome-card > *{position:relative;z-index:2;}
+.tome-card .tome{font-family:var(--f-mono);font-size:.62rem;letter-spacing:.24em;color:var(--gold-soft);text-transform:uppercase;margin-bottom:8px;}
+.tome-card .ct{font-family:var(--f-display);font-weight:700;line-height:1.2;font-size:1.4rem;color:#f5f7fc;}
+.tome-card .cyc{font-size:.78rem;color:#c8d2ea;margin-top:8px;font-style:italic;}
+
+/* Boîte d'achat, sous la carte, distincte */
+.tome-buy{display:flex;flex-direction:column;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;}
+.tb-row{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  background:rgba(5,9,20,.4);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:9px 12px;}
+.tb-row .tb-label{font-family:var(--f-mono);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+.tb-row .tb-price{font-family:var(--f-display);font-weight:700;font-size:.9rem;color:var(--gold);}
+.tb-row .tb-price s{font-weight:400;color:var(--muted);font-size:.75em;margin-right:5px;}
+.tb-row .tb-buy{font-family:var(--f-mono);font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;
+  background:var(--gold);color:#0a0f1e;border:none;border-radius:5px;padding:7px 12px;cursor:pointer;font-weight:600;
+  transition:transform .2s;flex-shrink:0;}
+.tb-row .tb-buy:hover{transform:scale(1.06);}
+.promo-tag{display:inline-block;font-family:var(--f-mono);font-size:.56rem;letter-spacing:.08em;text-transform:uppercase;
+  background:rgba(212,169,78,.16);color:var(--gold-soft);border:1px solid rgba(212,169,78,.4);border-radius:4px;padding:2px 7px;margin-left:6px;}
+
+.saga-bundle{max-width:760px;margin:0 auto;border:1px solid var(--gold);border-radius:14px;
+  background:linear-gradient(135deg,rgba(17,31,61,.85),rgba(10,18,38,.9));padding:30px clamp(20px,4vw,44px);
+  display:flex;flex-wrap:wrap;gap:24px;align-items:center;justify-content:space-between;}
+.saga-bundle .sb-info{flex:1;min-width:220px;}
+.saga-bundle .sb-tag{font-family:var(--f-mono);font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;}
+.saga-bundle h3{font-size:1.15rem;}
+.saga-bundle .sb-prices{display:flex;gap:28px;flex-wrap:wrap;}
+.saga-bundle .sb-block{text-align:center;}
+.saga-bundle .sb-block .sb-l{font-family:var(--f-mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+.saga-bundle .sb-block .sb-p{font-family:var(--f-display);font-weight:700;font-size:1.5rem;color:var(--gold);}
+.saga-bundle .sb-block .sb-p s{font-size:.7em;color:var(--muted);font-weight:400;margin-right:4px;}
+
+/* ===== NIVEAUX — grille cliquable ===== */
+.levels-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin:44px auto 0;max-width:640px;}
+.level-card{aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+@media(max-width:640px){.levels-grid{grid-template-columns:repeat(3,1fr);max-width:420px;}}
+@media(max-width:420px){.levels-grid{grid-template-columns:repeat(2,1fr);max-width:280px;}}
+.level-card{
+  --lvl-img: none; /* <== COLLE ICI L'URL DE L'IMAGE DU NIVEAU : url('...jpg') */
+  position:relative;background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  padding:20px 12px;text-align:center;overflow:hidden;cursor:pointer;
+  transition:transform .3s ease,border-color .3s ease,box-shadow .3s ease;}
+.level-card::before{content:'';position:absolute;inset:0;background-image:var(--lvl-img);background-size:cover;background-position:center;opacity:.35;z-index:0;}
+.level-card::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(13,24,48,.5),rgba(13,24,48,.92));z-index:0;}
+.level-card > *{position:relative;z-index:1;}
+.level-card:hover{transform:translateY(-6px);border-color:rgba(212,169,78,.5);box-shadow:0 12px 32px rgba(0,0,0,.4),0 0 24px rgba(59,130,246,.12);}
+.level-card:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
+.level-card .n-label{font-family:var(--f-mono);font-size:.58rem;letter-spacing:.22em;color:var(--muted);text-transform:uppercase;}
+.level-card .n-num{font-family:var(--f-display);font-size:2.2rem;font-weight:700;line-height:1.1;
+  background:linear-gradient(180deg,var(--blue-glow),#1e50c0);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.level-card.gold .n-num{background:linear-gradient(180deg,var(--gold-soft),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent;}
+.level-card .n-name{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:6px;line-height:1.4;}
+.level-card .n-click{margin-top:10px;font-family:var(--f-mono);font-size:.56rem;letter-spacing:.1em;color:var(--blue-glow);text-transform:uppercase;opacity:.75;}
+.why-levels{max-width:640px;margin:56px auto 0;text-align:center;color:var(--muted);font-size:.98rem;line-height:1.9;}
+.why-levels b{color:var(--ink);font-weight:600;}
+
+/* ===== MODAL (niveaux / détails) ===== */
+.modal-overlay{position:fixed;inset:0;z-index:1000;background:rgba(4,7,15,.82);backdrop-filter:blur(6px);
+  display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;pointer-events:none;transition:opacity .3s ease;}
+.modal-overlay.open{opacity:1;pointer-events:auto;}
+.modal-box{
+  --modal-img: none; /* <== image de fond optionnelle du niveau ouvert */
+  position:relative;width:min(560px,100%);max-height:86vh;overflow-y:auto;border-radius:16px;
+  background:var(--panel);border:1px solid var(--line);box-shadow:0 40px 100px rgba(0,0,0,.6);
+  transform:translateY(24px) scale(.97);transition:transform .35s cubic-bezier(.16,1,.3,1);}
+.modal-overlay.open .modal-box{transform:translateY(0) scale(1);}
+.modal-hero{position:relative;height:160px;background-image:var(--modal-img);background-size:cover;background-position:center;
+  background-color:#101d3d;display:flex;align-items:flex-end;padding:22px 28px;}
+.modal-hero::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(13,24,48,.1),rgba(13,24,48,.95));}
+.modal-hero .mh-num{position:relative;font-family:var(--f-display);font-weight:700;font-size:2.6rem;color:var(--gold);z-index:1;}
+.modal-close{position:absolute;top:14px;right:14px;z-index:3;width:34px;height:34px;border-radius:50%;
+  background:rgba(5,9,20,.7);border:1px solid var(--line);color:var(--ink);font-size:1rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:background .25s;}
+.modal-close:hover{background:rgba(59,130,246,.25);}
+.modal-body{padding:26px 28px 30px;}
+.modal-body .m-name{font-family:var(--f-display);font-weight:700;font-size:1.3rem;margin-bottom:10px;}
+.modal-body .m-desc{color:var(--muted);font-size:.92rem;line-height:1.7;margin-bottom:22px;}
+.modal-footer{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  border-top:1px solid var(--line);padding-top:20px;}
+.modal-footer .m-price{font-family:var(--f-display);font-weight:700;font-size:1.5rem;color:var(--gold);}
+.modal-footer .m-price-note{font-family:var(--f-mono);font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-top:2px;}
+
+/* ===== PACKS ===== */
+.packs{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:26px;max-width:920px;margin:48px auto 0;}
+.pack{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:38px 32px;display:flex;flex-direction:column;position:relative;transition:transform .3s,box-shadow .3s;}
+.pack:hover{transform:translateY(-8px);box-shadow:0 22px 54px rgba(0,0,0,.5);}
+.pack.featured{border-color:var(--gold);background:linear-gradient(180deg,#131f3e,#0d1830);box-shadow:0 0 44px rgba(212,169,78,.12);}
+.pack .flag{position:absolute;top:-13px;left:50%;transform:translateX(-50%);
+  background:linear-gradient(135deg,var(--gold),var(--gold-soft));color:#0a0f1e;
+  font-family:var(--f-mono);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;padding:6px 16px;border-radius:4px;white-space:nowrap;}
+.pack h3{font-size:1.15rem;letter-spacing:.02em;}
+.pack .p-sub{font-family:var(--f-mono);font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--blue-glow);margin:4px 0 20px;}
+.pack.featured .p-sub{color:var(--gold);}
+.pack .p-price{font-family:var(--f-display);font-size:2.6rem;font-weight:700;color:var(--gold);margin-bottom:6px;}
+.pack ul{list-style:none;margin:20px 0 30px;flex:1;}
+.pack li{font-size:.9rem;color:var(--muted);padding:7px 0;display:flex;gap:10px;}
+.pack li::before{content:'✓';color:var(--gold);font-weight:700;}
+.pack .btn{width:100%;}
+
+/* ===== ESPACE MEMBRE ===== */
+.member-wrap{display:grid;grid-template-columns:1fr 1.1fr;gap:56px;align-items:center;}
+@media(max-width:960px){.member-wrap{grid-template-columns:1fr;}}
+.member-list{list-style:none;margin-top:26px;}
+.member-list li{display:flex;gap:14px;align-items:center;padding:11px 0;color:var(--muted);font-size:.94rem;border-bottom:1px solid rgba(96,165,250,.08);}
+.member-list li:last-child{border-bottom:none;}
+.member-list .ic{width:34px;height:34px;flex-shrink:0;border-radius:8px;border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;font-size:.9rem;color:var(--blue-glow);background:rgba(59,130,246,.08);}
+.sync-note{margin-top:22px;font-family:var(--f-mono);font-size:.72rem;letter-spacing:.12em;color:var(--gold);text-transform:uppercase;}
+.dashboard{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:28px;
+  box-shadow:0 30px 80px rgba(0,0,0,.55), 0 0 50px rgba(59,130,246,.08);}
+.dash-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;}
+.dash-head .dh-title{font-family:var(--f-display);font-weight:600;font-size:.95rem;}
+.dash-head .dh-user{font-family:var(--f-mono);font-size:.66rem;color:var(--muted);letter-spacing:.1em;}
+.progress-block{margin-bottom:20px;}
+.progress-block .p-row{display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:8px;}
+.progress-block .p-row b{font-family:var(--f-mono);color:var(--gold);font-weight:500;}
+.p-bar{height:8px;border-radius:99px;background:rgba(96,165,250,.12);overflow:hidden;}
+.p-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#2563eb,var(--blue-glow));width:0;transition:width 1.4s cubic-bezier(.16,1,.3,1) .3s;}
+.p-bar i.gold{background:linear-gradient(90deg,var(--gold),var(--gold-soft));}
+.no-js .p-bar i{width:var(--w,60%);}
+.dash-levels{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px;}
+.dl{flex:1 1 calc(16.66% - 6px);min-width:34px;aspect-ratio:1;border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--f-mono);font-size:.68rem;border:1px solid var(--line);color:var(--muted);}
+.dl.done{background:rgba(59,130,246,.18);border-color:var(--blue);color:var(--blue-glow);}
+.dl.now{background:rgba(212,169,78,.16);border-color:var(--gold);color:var(--gold);box-shadow:0 0 14px rgba(212,169,78,.25);}
+.dash-items{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.di{border:1px solid var(--line);border-radius:8px;padding:12px;font-size:.72rem;color:var(--muted);}
+.di b{display:block;color:var(--ink);font-family:var(--f-display);font-size:.78rem;margin-bottom:2px;}
+.di .st{font-family:var(--f-mono);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;}
+.di .st.ok{color:#4ade80;}
+.di .st.wip{color:var(--gold);}
+
+/* ===== TABLEAU DE BORD FINANCIER ===== */
+.fin-dashboard{margin-top:70px;}
+.fin-head{text-align:center;margin-bottom:40px;}
+.fin-head h2{font-size:clamp(1.5rem,3.6vw,2.3rem);}
+.fin-white{color:var(--ink);}
+.fin-gold{color:var(--gold);}
+.fin-sub{color:var(--muted);font-family:var(--f-mono);font-size:.8rem;letter-spacing:.08em;margin-top:6px;}
+.fin-reset{margin-top:18px;background:transparent;border:1px solid var(--line);color:var(--muted);
+  font-family:var(--f-mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;
+  padding:9px 18px;border-radius:6px;cursor:pointer;transition:border-color .25s,color .25s;}
+.fin-reset:hover{border-color:#f87171;color:#f87171;}
+
+.fin-layout{display:grid;grid-template-columns:1fr 340px;gap:22px;align-items:start;}
+@media(max-width:1080px){.fin-layout{grid-template-columns:1fr;}}
+
+.fin-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;}
+@media(max-width:960px){.fin-cards{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:560px){.fin-cards{grid-template-columns:1fr;}}
+
+.fin-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;
+  display:flex;flex-direction:column;box-shadow:0 14px 34px rgba(0,0,0,.35);
+  transition:transform .35s cubic-bezier(.16,1,.3,1),border-color .3s ease,box-shadow .3s ease;}
+.fin-card:hover{transform:translateY(-5px);border-color:rgba(212,169,78,.4);
+  box-shadow:0 22px 54px rgba(0,0,0,.45),0 0 26px rgba(59,130,246,.1);}
+.fin-card-centered{align-items:center;text-align:center;}
+.fin-card-head{display:flex;gap:12px;align-items:flex-start;margin-bottom:14px;}
+.fin-num{flex-shrink:0;width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold-soft));
+  color:#0a0f1e;font-family:var(--f-display);font-weight:700;font-size:.85rem;display:flex;align-items:center;justify-content:center;}
+.fin-card-head h3{font-size:.92rem;margin-bottom:3px;}
+.fin-card-head p{font-size:.72rem;color:var(--muted);line-height:1.5;}
+.fin-icon{font-size:2.2rem;margin:6px 0 12px;}
+.fin-rows{display:flex;flex-direction:column;gap:7px;margin-bottom:12px;}
+.fin-row{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.fin-row span{font-size:.74rem;color:var(--muted);flex:1;}
+.fin-input{width:82px;background:rgba(5,9,20,.6);border:1px solid var(--line);border-radius:6px;
+  padding:6px 8px;color:var(--ink);font-family:var(--f-mono);font-size:.78rem;text-align:right;outline:none;transition:border-color .2s;}
+.fin-input:focus{border-color:var(--blue);}
+.fin-input-solo{width:100%;background:rgba(5,9,20,.6);border:1px solid var(--line);border-radius:8px;
+  padding:12px 14px;color:var(--gold);font-family:var(--f-display);font-weight:700;font-size:1.1rem;text-align:center;outline:none;transition:border-color .2s;}
+.fin-input-solo:focus{border-color:var(--gold);}
+.fin-single-label{font-family:var(--f-mono);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;}
+.fin-hint{font-size:.7rem;color:var(--muted);margin-top:10px;line-height:1.5;}
+.fin-subtag{font-family:var(--f-mono);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;margin:8px 0 8px;}
+.fin-subtag-plus{color:#4ade80;}
+.fin-subtag-minus{color:#f87171;}
+.fin-total{margin-top:auto;padding-top:12px;border-top:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;font-family:var(--f-mono);font-size:.68rem;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--muted);}
+.fin-total b{font-family:var(--f-display);font-size:1.1rem;color:var(--blue-glow);transition:color .3s;}
+.fin-total-gold b{color:var(--gold);}
+@keyframes finFlash{0%{transform:scale(1);}35%{transform:scale(1.14);text-shadow:0 0 14px currentColor;}100%{transform:scale(1);}}
+.fin-flash{animation:finFlash .5s ease;display:inline-block;}
+
+.fin-side{display:flex;flex-direction:column;gap:18px;}
+.fin-recap,.fin-gauge-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;box-shadow:0 14px 34px rgba(0,0,0,.35);}
+.fin-recap h3,.fin-gauge-card h3{font-size:1rem;margin-bottom:16px;color:var(--gold);}
+.fin-recap-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;
+  border-bottom:1px solid rgba(96,165,250,.08);font-size:.8rem;color:var(--muted);}
+.fin-recap-row:last-child{border-bottom:none;}
+.fin-recap-row b{font-family:var(--f-mono);color:var(--ink);font-weight:500;}
+
+.fin-formula{font-family:var(--f-mono);font-size:.68rem;color:var(--muted);margin-bottom:18px;line-height:1.6;}
+.fin-gauge-wrap{display:flex;justify-content:center;margin-bottom:18px;}
+.fin-gauge{position:relative;width:170px;height:170px;border-radius:50%;
+  background:conic-gradient(#ef4444 0deg 60deg,#f97316 60deg 120deg,#d4a94e 120deg 180deg,#3b82f6 180deg 240deg,#4ade80 240deg 300deg,#22d3ee 300deg 360deg);
+  display:flex;align-items:center;justify-content:center;box-shadow:0 0 40px rgba(59,130,246,.15);
+  transition:box-shadow .4s ease;}
+.fin-gauge::before{content:'';position:absolute;inset:16px;border-radius:50%;background:var(--panel);z-index:1;}
+.fin-gauge-needle{position:absolute;top:50%;left:50%;width:3px;height:69px;
+  background:linear-gradient(180deg,var(--ink) 0%,var(--ink) 60%,transparent 100%);
+  transform-origin:top center;transform:translate(-50%,0) rotate(0deg);
+  transition:transform 1.1s cubic-bezier(.16,1,.3,1);z-index:3;border-radius:3px;}
+.fin-gauge-dot{position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);
+  width:9px;height:9px;border-radius:50%;background:var(--ink);box-shadow:0 0 10px rgba(255,255,255,.7);}
+.fin-gauge-center{position:relative;z-index:2;font-family:var(--f-display);font-weight:700;font-size:1.5rem;color:var(--ink);
+  transition:color .3s;}
+.fin-legend{list-style:none;display:flex;flex-direction:column;gap:9px;}
+.fin-legend li{display:flex;align-items:flex-start;gap:8px;font-size:.72rem;color:var(--muted);line-height:1.5;}
+.fin-legend i{width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.fin-legend b{color:var(--ink);font-family:var(--f-mono);margin-right:4px;}
+
+.fin-quick{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:26px;}
+@media(max-width:900px){.fin-quick{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:520px){.fin-quick{grid-template-columns:1fr;}}
+.fin-qcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;text-align:center;
+  transition:transform .3s cubic-bezier(.16,1,.3,1),border-color .3s;}
+.fin-qcard:hover{transform:translateY(-4px);border-color:rgba(212,169,78,.35);}
+.fin-qlabel{display:block;font-size:.7rem;color:var(--muted);margin-bottom:10px;line-height:1.5;}
+.fin-qlabel em{font-style:normal;font-family:var(--f-mono);font-size:.64rem;opacity:.75;}
+.fin-qval{font-family:var(--f-display);font-weight:700;font-size:1.5rem;transition:color .3s;}
+.fin-qval-green{color:#4ade80;}
+.fin-qval-blue{color:var(--blue-glow);}
+.fin-qval-gold{color:var(--gold);}
+.fin-qval-purple{color:#a78bfa;}
+.fin-qval-red{color:#f87171;}
+
+.fin-quote{max-width:640px;margin:40px auto 0;text-align:center;position:relative;}
+.fin-quote-mark{font-family:var(--f-display);font-size:3rem;color:var(--gold);opacity:.4;line-height:0;}
+.fin-quote p{font-family:var(--f-display);font-size:1.05rem;line-height:1.7;color:#c8d2ea;margin-top:4px;}
+.my-products-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:18px;margin-top:44px;text-align:left;}
+.my-product-card{
+  --mp-img:none;
+  position:relative;border-radius:14px;overflow:hidden;aspect-ratio:3/4;cursor:pointer;
+  border:1px solid var(--line);box-shadow:0 16px 40px rgba(0,0,0,.4);
+  display:flex;flex-direction:column;justify-content:flex-end;padding:18px;
+  transition:transform .3s cubic-bezier(.16,1,.3,1),border-color .3s,box-shadow .3s;
+  background-color:#101d3d;background-image:var(--mp-img);background-size:cover;background-position:center;}
+.my-product-card::before{content:'';position:absolute;inset:0;z-index:0;
+  background:linear-gradient(180deg,rgba(13,24,48,.15) 0%,rgba(13,24,48,.55) 55%,rgba(5,9,20,.92) 100%);}
+.my-product-card > *{position:relative;z-index:1;}
+.my-product-card:hover{transform:translateY(-6px);border-color:var(--gold);box-shadow:0 20px 50px rgba(0,0,0,.5),0 0 26px rgba(212,169,78,.18);}
+.my-product-card .mp-tag{font-family:var(--f-mono);font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-soft);margin-bottom:6px;}
+.my-product-card .mp-name{font-family:var(--f-display);font-weight:700;font-size:1.02rem;color:#f5f7fc;line-height:1.25;}
+.my-product-card .mp-access{margin-top:10px;font-family:var(--f-mono);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--blue-glow);display:flex;align-items:center;gap:6px;}
+.my-product-card .mp-access::after{content:'→';transition:transform .25s;}
+.my-product-card:hover .mp-access::after{transform:translateX(4px);}
+.my-products-empty{max-width:480px;margin:44px auto 0;display:flex;flex-direction:column;align-items:center;gap:16px;}
+.my-products-empty .mpe-ic{font-size:2.4rem;color:var(--gold);opacity:.6;}
+.my-products-empty p{color:var(--muted);font-size:.92rem;line-height:1.7;}
+.my-products-grid.has-items + .my-products-empty{display:none;}
+.manifesto{text-align:center;border:1px solid var(--line);border-radius:18px;
+  background:linear-gradient(180deg,rgba(17,31,61,.7),rgba(10,18,38,.85));
+  padding:clamp(50px,7vw,84px) clamp(24px,6vw,90px);position:relative;overflow:hidden;}
+.manifesto::before{content:'∞';position:absolute;font-size:24rem;line-height:1;color:rgba(212,169,78,.05);
+  top:50%;left:50%;transform:translate(-50%,-55%);font-family:var(--f-display);pointer-events:none;}
+.manifesto .creed{font-family:var(--f-display);font-size:clamp(1.05rem,2.4vw,1.45rem);line-height:2;color:#c8d2ea;position:relative;}
+.manifesto .creed b{color:var(--ink);font-weight:600;}
+.manifesto .invite{margin-top:30px;font-family:var(--f-mono);font-size:.8rem;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);position:relative;}
+
+/* ===== FAQ ===== */
+.faq{max-width:720px;margin:44px auto 0;}
+.faq details{border:1px solid var(--line);border-radius:10px;background:var(--panel);margin-bottom:12px;overflow:hidden;}
+.faq summary{cursor:pointer;padding:20px 24px;font-family:var(--f-display);font-weight:600;font-size:.95rem;list-style:none;display:flex;justify-content:space-between;align-items:center;transition:color .25s;}
+.faq summary::-webkit-details-marker{display:none;}
+.faq summary::after{content:'+';font-size:1.3rem;color:var(--gold);transition:transform .3s;}
+.faq details[open] summary::after{transform:rotate(45deg);}
+.faq details p{padding:0 24px 20px;color:var(--muted);font-size:.9rem;}
+
+/* ===== COMMUNAUTÉ ===== */
+.community{text-align:center;}
+.community ul{list-style:none;display:flex;flex-wrap:wrap;justify-content:center;gap:10px 30px;margin:26px 0 34px;
+  font-family:var(--f-mono);font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+.community li::before{content:'◈ ';color:var(--gold);}
+
+/* ===== TOAST ===== */
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);z-index:2000;
+  background:var(--panel);border:1px solid var(--gold);border-radius:10px;padding:16px 22px;
+  box-shadow:0 20px 50px rgba(0,0,0,.5), 0 0 30px rgba(212,169,78,.15);
+  display:flex;align-items:center;gap:12px;max-width:min(420px,88vw);opacity:0;pointer-events:none;
+  transition:opacity .35s ease,transform .35s ease;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto;}
+.toast .t-ic{font-size:1.2rem;color:var(--gold);flex-shrink:0;}
+.toast .t-text{font-size:.85rem;color:var(--ink);line-height:1.5;}
+.toast .t-text b{color:var(--gold);}
+
+/* ===== QUIZ DIAGNOSTIC ===== */
+.quiz-box{
+  position:relative;width:min(560px,100%);max-height:86vh;overflow-y:auto;border-radius:16px;
+  background:var(--panel);border:1px solid var(--line);box-shadow:0 40px 100px rgba(0,0,0,.6);
+  transform:translateY(24px) scale(.97);transition:transform .35s cubic-bezier(.16,1,.3,1);padding:32px 30px;}
+.modal-overlay.open .quiz-box{transform:translateY(0) scale(1);}
+.quiz-progress-wrap{margin-bottom:20px;}
+.quiz-progress-label{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.quiz-progress-label b{color:var(--gold);}
+.quiz-progress-bar{height:5px;border-radius:99px;background:rgba(96,165,250,.14);overflow:hidden;}
+.quiz-progress-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--blue),var(--gold));transition:width .4s cubic-bezier(.16,1,.3,1);}
+.quiz-cat{font-family:var(--f-mono);font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;}
+.quiz-q{font-family:var(--f-display);font-weight:700;font-size:1.15rem;margin-bottom:22px;line-height:1.4;}
+.quiz-opts{display:flex;flex-direction:column;gap:10px;}
+.quiz-opt{text-align:left;background:rgba(5,9,20,.5);border:1px solid var(--line);border-radius:8px;
+  padding:14px 16px;color:var(--ink);font-family:var(--f-body);font-size:.9rem;cursor:pointer;transition:border-color .2s,background .2s;}
+.quiz-opt:hover{border-color:var(--gold);background:rgba(212,169,78,.08);}
+.quiz-result{text-align:center;}
+.quiz-result .qr-eyebrow{font-family:var(--f-mono);font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;}
+.quiz-result .qr-score{font-family:var(--f-mono);font-size:.72rem;color:var(--muted);margin-bottom:4px;}
+.quiz-result .qr-num{font-family:var(--f-display);font-size:3rem;font-weight:700;color:var(--gold);line-height:1;}
+.quiz-result .qr-name{font-family:var(--f-display);font-size:1.3rem;font-weight:700;margin:8px 0 14px;}
+.quiz-result .qr-desc{color:var(--muted);font-size:.92rem;line-height:1.7;margin-bottom:26px;}
+
+/* ===== FOOTER ===== */
+footer{border-top:1px solid var(--line);padding:44px clamp(20px,6vw,80px) 34px;background:rgba(5,9,20,.85);}
+.f-top{display:flex;flex-wrap:wrap;gap:26px 60px;justify-content:space-between;margin-bottom:30px;}
+.f-links{display:flex;flex-wrap:wrap;gap:10px 28px;font-size:.78rem;}
+footer a{color:var(--muted);text-decoration:none;transition:color .25s;}
+footer a:hover{color:var(--ink);}
+.f-bottom{font-size:.72rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:10px 40px;justify-content:space-between;border-top:1px solid rgba(96,165,250,.08);padding-top:22px;}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important;}
+  .js .reveal{opacity:1;transform:none;}
+  .forces span{opacity:1;}
+}
+</style>
+</head>
+<body class="no-js">
+
+<div class="bg-scene">
+  <div class="stars"></div>
+  <div class="net">
+    <svg viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#3b82f6" stop-opacity=".5"/><stop offset="1" stop-color="#d4a94e" stop-opacity=".25"/>
+      </linearGradient></defs>
+      <line x1="120" y1="180" x2="420" y2="90"/><line x1="420" y1="90" x2="760" y2="220"/>
+      <line x1="760" y1="220" x2="1080" y2="140"/><line x1="240" y1="560" x2="560" y2="640"/>
+      <line x1="560" y1="640" x2="900" y2="520"/><line x1="120" y1="180" x2="240" y2="560"/>
+      <line x1="760" y1="220" x2="900" y2="520"/>
+      <circle cx="120" cy="180" r="3"/><circle cx="420" cy="90" r="3"/><circle cx="760" cy="220" r="3"/>
+      <circle cx="1080" cy="140" r="3"/><circle cx="240" cy="560" r="3"/><circle cx="560" cy="640" r="3"/><circle cx="900" cy="520" r="3"/>
+    </svg>
+  </div>
+  <div class="tunnel-grid" id="tunnelGrid"></div>
+  <div class="glow-orb b"></div>
+  <div class="glow-orb g"></div>
+</div>
+
+<!-- NAV -->
+<header class="nav">
+  <a class="logo" href="#top"><img src="assets/logo.png" alt="Système Invisible" class="logo-img"> Système Invisible</a>
+  <nav class="nav-links">
+    <a href="#diagnostic"><span class="nav-dot free"></span>Test de Liberté</a>
+    <a href="#plan"><span class="nav-dot free"></span>Plan gratuit</a>
+    <a href="#livre"><span class="nav-dot book"></span>Système Invisible</a>
+    <a href="#niveaux"><span class="nav-dot book"></span>Les Niveaux</a>
+    <a href="#saga"><span class="nav-dot saga"></span>La Saga</a>
+    <a href="#espace"><span class="nav-dot member"></span>Espace Membre</a>
+    <a href="#produits"><span class="nav-dot shop"></span>Mes Produits</a>
+    <a href="#manifeste"><span class="nav-dot manifesto"></span>Manifeste</a>
+    <a href="#faq"><span class="nav-dot faq"></span>FAQ</a>
+    <button class="nav-burger" id="navBurger" aria-label="Ouvrir le menu" aria-expanded="false"><span></span><span></span><span></span></button>
+  </nav>
+</header>
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#diagnostic">Test de Liberté</a>
+  <a href="#plan">Plan gratuit</a>
+  <a href="#livre">Système Invisible</a>
+  <a href="#niveaux">Les Niveaux</a>
+  <a href="#saga">La Saga</a>
+  <a href="#espace">Espace Membre</a>
+  <a href="#produits">Mes Produits</a>
+  <a href="#manifeste">Manifeste</a>
+  <a href="#faq">FAQ</a>
+</div>
+
+<main id="top">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-bg" id="heroBg" style="--hero-img:url(&quot;assets/hero-bg.png&quot;)"></div>
+    <div class="hero-bg-overlay"></div>
+    <div class="hero-inner">
+    <div class="eyebrow" style="justify-content:center;">Les plus grandes forces qui dirigent votre vie sont invisibles</div>
+    <div class="forces">
+      <span>Le temps</span><span>Les habitudes</span><span>Les croyances</span><span>Les connaissances</span><span>Les systèmes</span>
+    </div>
+    <h1>Pourtant… ce sont elles qui déterminent votre avenir.</h1>
+    <div class="brand"><span class="w">Système</span> <span class="b">Invisible</span></div>
+    <p class="triptyque">
+      Un univers où la <b>fiction</b> rencontre la <b>réflexion</b>.<br>
+      Un parcours où chaque <b>lecture</b> devient une <b>compétence</b>.<br>
+      Une méthode où chaque compétence construit une <b>liberté durable</b>.
+    </p>
+    <div class="hero-ctas">
+      <a href="#plan" class="btn btn-blue">Découvrir gratuitement le Plan de la Liberté</a>
+      <a href="#saga" class="btn btn-ghost">Découvrir la Saga</a>
+      <a href="#niveaux" class="btn btn-ghost">Commencer le Niveau 0</a>
+      <a href="#livre" class="btn btn-gold">Système Invisible</a>
+    </div>
+    </div>
+  </section>
+  <!-- SECTION 1 : POURQUOI -->
+  <section class="reveal">
+    <div class="why">
+      <div>
+        <div class="eyebrow">Pourquoi Système Invisible ?</div>
+        <div class="apprend">
+          Depuis toujours,<br>
+          <em>nous apprenons à travailler.</em>
+          <em>nous apprenons à obéir.</em>
+          <em>nous apprenons à produire.</em>
+          <span class="flip">Mais très peu apprennent à comprendre les systèmes qui gouvernent réellement nos décisions.</span>
+        </div>
+      </div>
+      <div>
+        <div class="conviction">La liberté ne dépend pas uniquement de ce que l'on possède. Elle dépend de ce que l'on comprend et de ce que l'on construit.</div>
+        <p class="lead">Notre mission : aider chacun à développer des connaissances, des habitudes et des méthodes qui favorisent davantage d'autonomie, de discernement et de responsabilité.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 1bis : LE SYSTÈME INVISIBLE (produit diagnostic, distinct du Tome I) -->
+  <section id="diagnostic" class="reveal">
+    <div class="diag">
+      <div>
+        <div class="eyebrow">Test de Liberté — gratuit</div>
+        <h2>Le Test de Liberté : à quel point es-tu encore dépendant du système ?</h2>
+        <p class="lead">Plus ton niveau est bas, plus ta dépendance est forte. Un test pour situer précisément ta position dans le parcours à 12 niveaux — avant de choisir ton pack ou de commencer le Niveau 0.</p>
+        <div class="hero-ctas" style="justify-content:flex-start;margin-top:26px;">
+          <button class="btn btn-blue" id="openQuizBtn">Faire mon Test de Liberté</button>
+        </div>
+      </div>
+      <div class="gauge-stage">
+        <div class="gauge-halo"></div>
+        <div class="gauge">
+          <div class="gauge-ring"></div>
+          <svg viewBox="0 0 200 200">
+            <defs><linearGradient id="gaugeGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#3b82f6"/><stop offset="1" stop-color="#d4a94e"/>
+            </linearGradient></defs>
+            <circle class="track" cx="100" cy="100" r="90"/>
+            <circle class="fill" cx="100" cy="100" r="90" id="gaugeFill"/>
+          </svg>
+          <div class="gauge-center"><span class="gv" id="gaugeVal">2</span><span class="gl">Niveau estimé</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MODAL QUIZ DIAGNOSTIC -->
+  <div class="modal-overlay" id="quizModal">
+    <div class="quiz-box" id="quizBox">
+      <button class="modal-close" onclick="closeQuiz()">✕</button>
+      <div id="quizContent"></div>
+    </div>
+  </div>
+
+  <!-- SECTION 2 : PLAN DE LA LIBERTÉ -->
+  <section id="plan" class="reveal">
+    <div class="plan">
+      <div class="doc-stage">
+        <div class="doc-halo"></div>
+        <div class="doc">
+          <span class="d-inf">∞</span>
+          <div class="d-title">Plan de la<br>Liberté</div>
+          <div class="d-sub">Ton point de départ<br>vers une vraie liberté</div>
+        </div>
+        <div class="free-badge"><span class="p">100%</span><span class="l">Gratuit</span></div>
+      </div>
+      <div>
+        <div class="eyebrow">Guide d'introduction offert</div>
+        <h2>Recevez gratuitement le Plan de la Liberté</h2>
+        <p class="lead">Avant de découvrir notre univers, recevez notre guide d'introduction.</p>
+        <ul>
+          <li>Les principaux mécanismes qui influencent nos choix</li>
+          <li>Les bases de la méthode proposée</li>
+          <li>Les premières actions concrètes pour commencer votre parcours</li>
+        </ul>
+        <form class="form-row" id="planForm">
+          <input type="text" id="planName" placeholder="Nom" aria-label="Nom" required>
+          <input type="email" id="planEmail" placeholder="Adresse e-mail" aria-label="Adresse e-mail" required>
+          <button class="btn btn-gold" type="submit">Recevoir gratuitement</button>
+        </form>
+        <p class="form-note" id="planNote">Téléchargement immédiat + inscription à la newsletter. Sans engagement.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 1ter : SYSTEME INVISIBLE (le livre-methode, distinct de la saga) -->
+  <section id="livre" class="reveal">
+    <div class="diag">
+      <div>
+        <div class="eyebrow">Le Livre</div>
+        <h2>Système Invisible</h2>
+        <p class="lead">Le manuel qui accompagne tout le parcours : les mécanismes, la méthode, et les clés pour avancer niveau après niveau. C'est ce livre qui débloque l'accès aux niveaux — tant qu'il n'est pas acquis, la progression reste fermée.</p>
+        <ul>
+          <li>La méthode complète expliquée pas à pas</li>
+          <li>Les fondations de chacun des 12 niveaux</li>
+          <li>Débloque l'accès au parcours</li>
+        </ul>
+        <div class="hero-ctas" style="justify-content:flex-start;margin-top:26px;">
+          <button class="btn btn-gold" id="buyLivreBtn">Obtenir le livre — 49 €</button>
+        </div>
+      </div>
+      <div class="doc-stage">
+        <div class="doc-halo"></div>
+        <div class="doc">
+          <span class="d-inf">∞</span>
+          <div class="d-title">Système<br>Invisible</div>
+          <div class="d-sub">Le manuel du<br>parcours complet</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 4 : NIVEAUX -->
+  <section id="niveaux" class="reveal center">
+    <div class="eyebrow">Transformez la lecture en apprentissage</div>
+    <h2>Un parcours structuré, niveau après niveau</h2>
+    <p class="lead">Clique sur un niveau pour voir le détail et l'accès à l'achat.</p>
+    <div class="levels-grid" id="levelsGrid"></div>
+    <div class="why-levels">
+      <b>Pourquoi une progression par niveaux ?</b><br>
+      Parce que l'on ne construit pas une compétence durable en une seule lecture.
+      Chaque niveau ajoute une nouvelle compréhension. Chaque compréhension nourrit une nouvelle capacité d'action.
+      Chaque capacité contribue à bâtir une trajectoire plus autonome.
+    </div>
+  </section>
+
+  <!-- MODAL NIVEAU (partagé, rempli par JS) -->
+  <div class="modal-overlay" id="levelModal">
+    <div class="modal-box" id="levelModalBox">
+      <button class="modal-close" onclick="closeLevelModal()">✕</button>
+      <div class="modal-hero" id="modalHero"><span class="mh-num" id="modalNum"></span></div>
+      <div class="modal-body">
+        <div class="m-name" id="modalName"></div>
+        <div class="m-desc" id="modalDesc"></div>
+        <div class="modal-footer">
+          <div>
+            <div class="m-price" id="modalPrice"></div>
+            <span class="m-price-note">Lien de paiement à venir</span>
+          </div>
+          <button class="btn btn-gold" id="modalBuyBtn">Acheter ce niveau</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 5 : PACKS -->
+  <section id="packs" class="reveal center">
+    <div class="eyebrow">Choisissez votre parcours</div>
+    <h2>Deux packs. Un même chemin.</h2>
+    <div class="packs">
+      <div class="pack">
+        <h3>Pack Découverte</h3>
+        <div class="p-sub">Livre + Niveau 0</div>
+        <div class="p-price">49 €</div>
+        <ul>
+          <li>Livre &quot;Système Invisible&quot;</li>
+          <li>Niveau 0</li>
+          <li>Accès membre</li>
+          <li>Bibliothèque numérique</li>
+          <li>Exercices</li>
+          <li>Téléchargements sécurisés</li>
+        </ul>
+        <a href="#" class="btn btn-blue" data-pack="decouverte">Commencer maintenant</a>
+      </div>
+      <div class="pack featured">
+        <div class="flag">Offre complète</div>
+        <h3>Pack Évolution</h3>
+        <div class="p-sub">Livre + Niveaux 0 à 5</div>
+        <div class="p-price">369 €</div>
+        <ul>
+          <li>Livre &quot;Système Invisible&quot;</li>
+          <li>Niveaux 0 à 5</li>
+          <li>Bibliothèque complète</li>
+          <li>Ressources exclusives</li>
+          <li>Exercices</li>
+          <li>Mises à jour</li>
+          <li>Accès prioritaire aux nouveautés</li>
+        </ul>
+        <a href="#" class="btn btn-gold" data-pack="evolution">Construire mon parcours</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 3 : LA SAGA -->
+  <section id="saga" class="reveal">
+    <div class="saga-head">
+      <div class="eyebrow" style="justify-content:center;">La Saga</div>
+      <h2>Trois romans. Une même histoire.</h2>
+      <div class="saga-punch">Une seule question.<span class="q">Qui observe réellement notre réalité ?</span></div>
+      <p class="lead" style="margin-top:14px;">Une fiction mêlant anticipation, philosophie et réflexion sur les systèmes — pour porter un regard nouveau sur le monde.</p>
+    </div>
+    <div class="saga-covers">
+      <div class="tome-col">
+        <div class="tome-card c1" style="--tome-img:url(&quot;assets/tome-1.png&quot;);">
+          <span class="tome">Tome I</span>
+          <div class="ct">Le Système Invisible</div>
+          <div class="cyc">L'Éveil — tout commence par voir</div>
+        </div>
+        <div class="tome-buy">
+          <div class="tb-row"><span class="tb-label">Numérique</span><span class="tb-price"><s>25,99€</s>17,99€<span class="promo-tag">Promo</span></span><button class="tb-buy" data-buy="Tome I — Numérique">Acheter</button></div>
+          <div class="tb-row"><span class="tb-label">Papier</span><span class="tb-price"><s>32,99€</s>24,99€<span class="promo-tag">Promo</span></span><button class="tb-buy" data-buy="Tome I — Papier">Acheter</button></div>
+        </div>
+      </div>
+      <div class="tome-col">
+        <div class="tome-card c2" style="--tome-img:url(&quot;assets/tome-2.jpg&quot;);">
+          <span class="tome">Tome II</span>
+          <div class="ct">Le Miroir Invisible</div>
+          <div class="cyc">La Révélation — rien n'est ce qu'il paraît</div>
+        </div>
+        <div class="tome-buy">
+          <div class="tb-row"><span class="tb-label">Numérique</span><span class="tb-price"><s>25,99€</s>17,99€<span class="promo-tag">Promo</span></span><button class="tb-buy" data-buy="Tome II — Numérique">Acheter</button></div>
+          <div class="tb-row"><span class="tb-label">Papier</span><span class="tb-price"><s>32,99€</s>24,99€<span class="promo-tag">Promo</span></span><button class="tb-buy" data-buy="Tome II — Papier">Acheter</button></div>
+        </div>
+      </div>
+      <div class="tome-col">
+        <div class="tome-card c3" style="--tome-img:url(&quot;assets/tome-3.jpg&quot;);">
+          <span class="tome">Tome III</span>
+          <div class="ct">L'Architecte Invisible</div>
+          <div class="cyc">La Transmission — comprendre, c'est déjà construire</div>
+        </div>
+        <div class="tome-buy">
+          <div class="tb-row"><span class="tb-label">Numérique</span><span class="tb-price"><s>25,99€</s>17,99€<span class="promo-tag">Promo</span></span><button class="tb-buy" data-buy="Tome III — Numérique">Acheter</button></div>
+          <div class="tb-row"><span class="tb-label">Papier</span><span class="tb-price"><s>32,99€</s>24,99€<span class="promo-tag">Promo</span></span><button class="tb-buy" data-buy="Tome III — Papier">Acheter</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="saga-bundle">
+      <div class="sb-info">
+        <div class="sb-tag">La trilogie complète</div>
+        <h3>Les 3 Tomes — un seul voyage</h3>
+      </div>
+      <div class="sb-prices">
+        <div class="sb-block"><div class="sb-l">Numérique</div><div class="sb-p"><s>54,99€</s>45,99€</div><button class="btn btn-gold" data-buy="Trilogie — Numérique">Acheter</button></div>
+        <div class="sb-block"><div class="sb-l">Papier</div><div class="sb-p"><s>84,99€</s>69,99€</div><button class="btn btn-ghost" data-buy="Trilogie — Papier">Acheter</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 6 : ESPACE MEMBRE -->
+  <section id="espace" class="reveal">
+    <div class="member-wrap">
+      <div>
+        <div class="eyebrow">Espace membre</div>
+        <h2>Votre espace personnel sécurisé</h2>
+        <p class="lead">Après votre achat, vous accédez à un espace qui vous suit partout.</p>
+        <ul class="member-list">
+          <li><span class="ic">▤</span>Votre bibliothèque numérique et vos e-books</li>
+          <li><span class="ic">↓</span>Vos téléchargements sécurisés</li>
+          <li><span class="ic">◎</span>Votre progression, niveau par niveau</li>
+          <li><span class="ic">✎</span>Vos notes personnelles</li>
+          <li><span class="ic">▦</span>Vos factures et les mises à jour de vos contenus</li>
+        </ul>
+        <div class="sync-note">Votre progression vous suit sur tous vos appareils.</div>
+      </div>
+      <div class="dashboard">
+        <div class="dash-head">
+          <span class="dh-title">Bienvenue, membre 👋</span>
+          <span class="dh-user">Progression niveaux</span>
+        </div>
+        <div class="progress-block">
+          <div class="p-row"><span>Parcours des 12 niveaux</span><b id="dashPct">0%</b></div>
+          <div class="p-bar"><i id="dashBar" data-w="0%" style="--w:0%"></i></div>
+        </div>
+        <div id="dashTomes"></div>
+        <div class="dash-levels" id="dashLevels"></div>
+        <div class="dash-items" id="dashItems"></div>
+      </div>
+    </div>
+
+    <!-- TABLEAU DE BORD FINANCIER -->
+    <div class="fin-dashboard">
+      <div class="fin-head">
+        <h2><span class="fin-white">Ton tableau de bord</span> <span class="fin-gold">— Système Invisible</span></h2>
+        <p class="fin-sub">Mesure. Comprends. Construis. Sois libre.</p>
+        <button class="fin-reset" id="finResetBtn">↺ Réinitialiser le tableau de bord</button>
+      </div>
+
+      <div class="fin-layout">
+        <div class="fin-cards">
+
+          <div class="fin-card">
+            <div class="fin-card-head"><span class="fin-num">1</span><div><h3>Revenus mensuels</h3><p>Tout ce qui entre régulièrement chaque mois.</p></div></div>
+            <div class="fin-rows">
+              <div class="fin-row"><span>💼 Salaire</span><input type="number" class="fin-input" data-group="revenus" placeholder="0"></div>
+              <div class="fin-row"><span>🏢 Entreprise</span><input type="number" class="fin-input" data-group="revenus" placeholder="0"></div>
+              <div class="fin-row"><span>🎯 Prestations</span><input type="number" class="fin-input" data-group="revenus" placeholder="0"></div>
+              <div class="fin-row"><span>✅ Commissions</span><input type="number" class="fin-input" data-group="revenus" placeholder="0"></div>
+              <div class="fin-row"><span>👑 Royalties</span><input type="number" class="fin-input" data-group="revenus" placeholder="0"></div>
+              <div class="fin-row"><span>🏠 Locations</span><input type="number" class="fin-input" data-group="revenus" placeholder="0"></div>
+              <div class="fin-row"><span>💰 Dividendes</span><input type="number" class="fin-input" data-group="revenus" placeholder="0"></div>
+              <div class="fin-row"><span>◆ Autres revenus</span><input type="number" class="fin-input" data-group="revenus" placeholder="0"></div>
+            </div>
+            <div class="fin-total"><span>TOTAL REVENUS</span><b id="finTotalRevenus">0 €</b></div>
+          </div>
+
+          <div class="fin-card">
+            <div class="fin-card-head"><span class="fin-num">2</span><div><h3>Charges fixes</h3><p>Tout ce qui sort avant même d'avoir commencé à vivre.</p></div></div>
+            <div class="fin-rows">
+              <div class="fin-row"><span>🏠 Logement</span><input type="number" class="fin-input" data-group="charges" placeholder="0"></div>
+              <div class="fin-row"><span>⚡ Énergie</span><input type="number" class="fin-input" data-group="charges" placeholder="0"></div>
+              <div class="fin-row"><span>📶 Télécommunications</span><input type="number" class="fin-input" data-group="charges" placeholder="0"></div>
+              <div class="fin-row"><span>🛡 Assurances</span><input type="number" class="fin-input" data-group="charges" placeholder="0"></div>
+              <div class="fin-row"><span>🍽 Alimentation</span><input type="number" class="fin-input" data-group="charges" placeholder="0"></div>
+              <div class="fin-row"><span>🚗 Transports</span><input type="number" class="fin-input" data-group="charges" placeholder="0"></div>
+              <div class="fin-row"><span>📋 Impôts</span><input type="number" class="fin-input" data-group="charges" placeholder="0"></div>
+              <div class="fin-row"><span>💳 Crédits</span><input type="number" class="fin-input" data-group="charges" placeholder="0"></div>
+              <div class="fin-row"><span>🔁 Abonnements</span><input type="number" class="fin-input" data-group="charges" placeholder="0"></div>
+              <div class="fin-row"><span>◆ Autres charges</span><input type="number" class="fin-input" data-group="charges" placeholder="0"></div>
+            </div>
+            <div class="fin-total"><span>TOTAL CHARGES</span><b id="finTotalCharges">0 €</b></div>
+          </div>
+
+          <div class="fin-card fin-card-centered">
+            <div class="fin-card-head"><span class="fin-num">3</span><div><h3>Épargne</h3><p>Ce que tu décides de conserver. Tu épargnes avant de dépenser.</p></div></div>
+            <div class="fin-icon">🐷</div>
+            <label class="fin-single-label">ÉPARGNE MENSUELLE</label>
+            <input type="number" id="finEpargne" class="fin-input-solo" placeholder="0 €">
+            <p class="fin-hint">Même une petite somme, mais chaque mois.</p>
+          </div>
+
+          <div class="fin-card fin-card-centered">
+            <div class="fin-card-head"><span class="fin-num">4</span><div><h3>Investissements</h3><p>Chaque euro investi doit créer de la valeur et de la liberté.</p></div></div>
+            <div class="fin-icon">📈</div>
+            <label class="fin-single-label">INVESTISSEMENTS MENSUELS</label>
+            <input type="number" id="finInvest" class="fin-input-solo" placeholder="0 €">
+            <p class="fin-hint">Cet argent travaille-t-il pour toi… ou disparaît-il définitivement ?</p>
+          </div>
+
+          <div class="fin-card">
+            <div class="fin-card-head"><span class="fin-num">5</span><div><h3>Patrimoine</h3><p>Ce qu'il te reste réellement. Additionne tes actifs puis retire tes dettes.</p></div></div>
+            <div class="fin-subtag fin-subtag-plus">À additionner (+)</div>
+            <div class="fin-rows">
+              <div class="fin-row"><span>Épargne</span><input type="number" class="fin-input" data-group="patrimoine-plus" placeholder="0"></div>
+              <div class="fin-row"><span>Placements</span><input type="number" class="fin-input" data-group="patrimoine-plus" placeholder="0"></div>
+              <div class="fin-row"><span>Biens (immobilier, matériel…)</span><input type="number" class="fin-input" data-group="patrimoine-plus" placeholder="0"></div>
+              <div class="fin-row"><span>Entreprises</span><input type="number" class="fin-input" data-group="patrimoine-plus" placeholder="0"></div>
+              <div class="fin-row"><span>Autres actifs</span><input type="number" class="fin-input" data-group="patrimoine-plus" placeholder="0"></div>
+            </div>
+            <div class="fin-subtag fin-subtag-minus">À retirer (−)</div>
+            <div class="fin-rows">
+              <div class="fin-row"><span>Crédits</span><input type="number" class="fin-input" data-group="patrimoine-minus" placeholder="0"></div>
+              <div class="fin-row"><span>Dettes</span><input type="number" class="fin-input" data-group="patrimoine-minus" placeholder="0"></div>
+              <div class="fin-row"><span>Engagements financiers</span><input type="number" class="fin-input" data-group="patrimoine-minus" placeholder="0"></div>
+            </div>
+            <div class="fin-total fin-total-gold"><span>PATRIMOINE NET</span><b id="finPatrimoineNet">0 €</b></div>
+          </div>
+
+          <div class="fin-card">
+            <div class="fin-card-head"><span class="fin-num">6</span><div><h3>Cash-flow</h3><p>Ce que ton système produit sans que tu travailles.</p></div></div>
+            <div class="fin-rows">
+              <div class="fin-row"><span>Investissements</span><input type="number" class="fin-input" data-group="cashflow" placeholder="0"></div>
+              <div class="fin-row"><span>Biens immobiliers</span><input type="number" class="fin-input" data-group="cashflow" placeholder="0"></div>
+              <div class="fin-row"><span>Entreprises</span><input type="number" class="fin-input" data-group="cashflow" placeholder="0"></div>
+              <div class="fin-row"><span>Droits d'auteur / Royalties</span><input type="number" class="fin-input" data-group="cashflow" placeholder="0"></div>
+              <div class="fin-row"><span>Licences</span><input type="number" class="fin-input" data-group="cashflow" placeholder="0"></div>
+              <div class="fin-row"><span>Systèmes automatisés</span><input type="number" class="fin-input" data-group="cashflow" placeholder="0"></div>
+              <div class="fin-row"><span>Activités passives</span><input type="number" class="fin-input" data-group="cashflow" placeholder="0"></div>
+              <div class="fin-row"><span>Autres revenus passifs</span><input type="number" class="fin-input" data-group="cashflow" placeholder="0"></div>
+            </div>
+            <div class="fin-total"><span>CASH-FLOW MENSUEL</span><b id="finTotalCashflow">0 €</b></div>
+            <p class="fin-hint">Le jour où ton cash-flow dépasse tes dépenses essentielles… tout change.</p>
+          </div>
+
+          <div class="fin-card fin-card-centered">
+            <div class="fin-card-head"><span class="fin-num">7</span><div><h3>Objectif de liberté</h3><p>Quel revenu mensuel te permettrait de vivre sereinement, sans sacrifier ce qui compte vraiment pour toi ?</p></div></div>
+            <div class="fin-icon">🎯</div>
+            <label class="fin-single-label">OBJECTIF MENSUEL</label>
+            <input type="number" id="finObjectif" class="fin-input-solo" placeholder="0 €">
+            <p class="fin-hint">Ton objectif. Ton choix.</p>
+          </div>
+
+          <div class="fin-card fin-card-centered">
+            <div class="fin-card-head"><span class="fin-num">8</span><div><h3>Date estimée de liberté</h3><p>Écris une date. Même approximative. Une date transforme une intention en engagement.</p></div></div>
+            <div class="fin-icon">📅</div>
+            <label class="fin-single-label">DATE ESTIMÉE</label>
+            <input type="date" id="finDate" class="fin-input-solo">
+            <p class="fin-hint">Elle donnera une direction à chacun de tes pas.</p>
+          </div>
+
+        </div>
+
+        <div class="fin-side">
+          <div class="fin-recap">
+            <h3>Récapitulatif personnel</h3>
+            <div class="fin-recap-row"><span>💼 Revenus mensuels</span><b id="recapRevenus">0 €</b></div>
+            <div class="fin-recap-row"><span>🏠 Charges fixes</span><b id="recapCharges">0 €</b></div>
+            <div class="fin-recap-row"><span>🐷 Épargne mensuelle</span><b id="recapEpargne">0 €</b></div>
+            <div class="fin-recap-row"><span>📈 Investissements mensuels</span><b id="recapInvest">0 €</b></div>
+            <div class="fin-recap-row"><span>🏛 Patrimoine net</span><b id="recapPatrimoine">0 €</b></div>
+            <div class="fin-recap-row"><span>💶 Cash-flow mensuel</span><b id="recapCashflow">0 €</b></div>
+            <div class="fin-recap-row"><span>🎯 Objectif de liberté</span><b id="recapObjectif">0 €</b></div>
+            <div class="fin-recap-row"><span>📅 Date estimée</span><b id="recapDate">JJ/MM/AAAA</b></div>
+          </div>
+
+          <div class="fin-gauge-card">
+            <h3>Ton indice de liberté<sup>™</sup></h3>
+            <p class="fin-formula">Indice = (Cash-flow mensuel ÷ Charges fixes) × 100</p>
+            <div class="fin-gauge-wrap">
+              <div class="fin-gauge" id="finGauge">
+                <div class="fin-gauge-needle" id="finGaugeNeedle"><span class="fin-gauge-dot"></span></div>
+                <div class="fin-gauge-center"><span id="finIndice">0%</span></div>
+              </div>
+            </div>
+            <ul class="fin-legend">
+              <li><i style="background:#ef4444"></i><b>0%</b> Tu dépends entièrement de ton travail.</li>
+              <li><i style="background:#f97316"></i><b>25%</b> Tes premiers actifs apparaissent.</li>
+              <li><i style="background:#d4a94e"></i><b>50%</b> Ton système commence à prendre le relais.</li>
+              <li><i style="background:#3b82f6"></i><b>75%</b> Tu disposes d'une véritable marge de sécurité.</li>
+              <li><i style="background:#4ade80"></i><b>100%</b> Tes actifs couvrent tes charges essentielles.</li>
+              <li><i style="background:#22d3ee"></i><b>150%+</b> Ton système produit davantage. Accélère, transmets ou investis.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="fin-quick">
+        <div class="fin-qcard"><span class="fin-qlabel">Revenus − Charges<br><em>(Excédent mensuel)</em></span><b id="qaExcedent" class="fin-qval fin-qval-green">0 €</b></div>
+        <div class="fin-qcard"><span class="fin-qlabel">Taux d'épargne<br><em>(Épargne / Revenus)</em></span><b id="qaEpargne" class="fin-qval fin-qval-blue">0%</b></div>
+        <div class="fin-qcard"><span class="fin-qlabel">Taux d'investissement<br><em>(Investissements / Revenus)</em></span><b id="qaInvest" class="fin-qval fin-qval-gold">0%</b></div>
+        <div class="fin-qcard"><span class="fin-qlabel">Couverture cash-flow<br><em>(Cash-flow / Charges)</em></span><b id="qaCouverture" class="fin-qval fin-qval-purple">0%</b></div>
+        <div class="fin-qcard"><span class="fin-qlabel">Écart à ton objectif<br><em>(Objectif − Cash-flow)</em></span><b id="qaEcart" class="fin-qval fin-qval-red">0 €</b></div>
+      </div>
+
+      <div class="fin-quote">
+        <span class="fin-quote-mark">"</span>
+        <p>La véritable liberté, ce n'est pas d'avoir plus d'argent, mais d'avoir un système qui produit de la valeur sans dépendre de ton temps.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 6bis : MES PRODUITS -->
+
+  <section id="produits" class="reveal center">
+    <div class="eyebrow">Ta bibliothèque</div>
+    <h2>Mes produits</h2>
+    <p class="lead">Retrouve ici tout ce que tu as acheté — clique pour y accéder directement.</p>
+    <div id="myProductsGrid" class="my-products-grid"></div>
+    <div id="myProductsEmpty" class="my-products-empty">
+      <span class="mpe-ic">◇</span>
+      <p>Tu n'as encore aucun produit. Dès ton premier achat — un niveau, un tome, un pack — il apparaîtra ici et tu pourras y accéder directement depuis le site.</p>
+      <a href="#niveaux" class="btn btn-blue">Découvrir les niveaux</a>
+    </div>
+  </section>
+
+  <!-- SECTION 7 : MANIFESTE -->
+  <section id="manifeste" class="reveal">
+    <div class="manifesto">
+      <div class="eyebrow" style="justify-content:center;">Le Manifeste</div>
+      <div class="creed">
+        Nous croyons que les connaissances prennent toute leur valeur <b>lorsqu'elles sont mises en pratique</b>.<br>
+        Nous croyons que les habitudes <b>façonnent les trajectoires</b>.<br>
+        Nous croyons que les systèmes <b>peuvent amplifier les efforts</b>.<br>
+        Nous croyons que chacun peut <b>apprendre, progresser et transmettre</b>.
+      </div>
+      <div class="invite">Observer · Comprendre · Construire</div>
+    </div>
+  </section>
+
+  <!-- SECTION 9 : FAQ -->
+  <section id="faq" class="reveal center">
+    <div class="eyebrow">Questions fréquentes</div>
+    <h2>FAQ</h2>
+    <div class="faq" style="text-align:left;">
+      <details>
+        <summary>Le Plan de la Liberté est-il gratuit ?</summary>
+        <p>Oui.</p>
+      </details>
+      <details>
+        <summary>Comment accéder à mes achats ?</summary>
+        <p>Depuis votre espace membre sécurisé.</p>
+      </details>
+      <details>
+        <summary>Les e-books peuvent-ils être téléchargés ?</summary>
+        <p>Oui, dans les conditions prévues lors de l'achat.</p>
+      </details>
+      <details>
+        <summary>Les paiements sont-ils sécurisés ?</summary>
+        <p>Oui. Les paiements sont traités via Stripe.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- SECTION 10 : COMMUNAUTÉ -->
+  <section class="reveal community">
+    <div class="eyebrow" style="justify-content:center;">Rejoignez la communauté</div>
+    <h2>L'univers continue après la lecture</h2>
+    <ul>
+      <li>Nouveautés de la saga</li>
+      <li>Nouveaux niveaux</li>
+      <li>Articles de réflexion</li>
+      <li>Ressources exclusives</li>
+      <li>Offres réservées aux membres</li>
+    </ul>
+    <a href="#plan" class="btn btn-gold">Je rejoins la communauté</a>
+  </section>
+
+</main>
+
+<footer>
+  <div class="f-top">
+    <a class="logo" href="#top"><img src="assets/logo.png" alt="Système Invisible" class="logo-img"> Système Invisible</a>
+    <div class="f-links">
+      <a href="#">Mentions légales</a>
+      <a href="#">CGV</a>
+      <a href="#">Politique de confidentialité</a>
+      <a href="#">Gestion des cookies</a>
+      <a href="#">Politique de remboursement</a>
+      <a href="#">Contact</a>
+      <a href="#">FAQ</a>
+      <a href="#">Newsletter</a>
+      <a href="#">Réseaux sociaux</a>
+    </div>
+  </div>
+  <div class="f-bottom">
+    <span>© 2026 Systeme-Invisible.com — Tous droits réservés.</span>
+    <span>Paiements sécurisés via Stripe · Données hébergées en Europe</span>
+  </div>
+</footer>
+
+<div class="toast" id="toast"><span class="t-ic">∞</span><span class="t-text" id="toastText"></span></div>
+
+<script>
+document.body.classList.remove('no-js');
+document.body.classList.add('js');
+
+/* Toast (remplace les alert() natifs) */
+let toastTimer;
+function showToast(text){
+  const t = document.getElementById('toast');
+  document.getElementById('toastText').innerHTML = text;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 4200);
+}
+
+/* Menu mobile */
+const navBurger = document.getElementById('navBurger');
+const mobileMenu = document.getElementById('mobileMenu');
+navBurger.addEventListener('click', ()=>{
+  const open = mobileMenu.classList.toggle('open');
+  navBurger.classList.toggle('open', open);
+  navBurger.setAttribute('aria-expanded', open);
+});
+mobileMenu.querySelectorAll('a').forEach(a=>{
+  a.addEventListener('click', ()=>{
+    mobileMenu.classList.remove('open');
+    navBurger.classList.remove('open');
+    navBurger.setAttribute('aria-expanded','false');
+  });
+});
+
+const io = new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      e.target.classList.add('in');
+      e.target.querySelectorAll('.p-bar i').forEach(bar=>{ bar.style.width = bar.dataset.w; });
+      e.target.querySelectorAll('.gauge .fill').forEach(g=>g.classList.add('in'));
+      io.unobserve(e.target);
+    }
+  });
+},{threshold:.18});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+/* ===== ESPACE MEMBRE : dashboard piloté par les produits RÉELLEMENT possédés ===== */
+const STORAGE_KEY = 'systemeInvisible_member';
+function loadMemberData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return { ownedLevels: [], ownedTomes: [], ownedBook: false, diagLevel: null };
+}
+function saveMemberData(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(MEMBER_DATA)); }catch(e){}
+}
+const MEMBER_DATA = loadMemberData();
+
+function renderDashboard(){
+  const total = LEVELS.length; // 12
+  const owned = MEMBER_DATA.ownedLevels.length;
+  const pct = Math.round((owned/total)*100);
+
+  document.getElementById('dashPct').textContent = pct + '%';
+  const bar = document.getElementById('dashBar');
+  bar.dataset.w = pct + '%';
+  bar.style.setProperty('--w', pct + '%');
+
+  const nextLevel = LEVELS.find(l => !MEMBER_DATA.ownedLevels.includes(l.n));
+  const dl = document.getElementById('dashLevels');
+  dl.innerHTML = LEVELS.map(l=>{
+    const isOwned = MEMBER_DATA.ownedLevels.includes(l.n);
+    const isNow = nextLevel && l.n === nextLevel.n;
+    const cls = isOwned ? 'done' : (isNow ? 'now' : '');
+    return `<span class="dl ${cls}" title="Niveau ${l.n} — ${l.name}">${l.n}</span>`;
+  }).join('');
+
+  const TOMES = [
+    {id:'I',   label:'Tome I — L\'Éveil'},
+    {id:'II',  label:'Tome II — La Révélation'},
+    {id:'III', label:'Tome III — La Transmission'},
+  ];
+  const dt = document.getElementById('dashTomes');
+  dt.innerHTML = TOMES.map(t=>{
+    const has = MEMBER_DATA.ownedTomes.includes(t.id);
+    const p = has ? 100 : 0;
+    return `<div class="progress-block">
+      <div class="p-row"><span>${t.label}</span><b>${has ? 'Possédé' : 'Non acquis'}</b></div>
+      <div class="p-bar"><i class="${has?'gold':''}" data-w="${p}%"></i></div>
+    </div>`;
+  }).join('');
+
+  const items = document.getElementById('dashItems');
+  const rows = [];
+  if(MEMBER_DATA.diagLevel !== null){
+    rows.push(`<div class="di"><b>Test de Liberté</b>Niveau ${MEMBER_DATA.diagLevel} estimé<div class="st ok">Fait</div></div>`);
+  }
+  if(nextLevel){
+    rows.push(`<div class="di"><b>Niveau ${nextLevel.n}</b>${nextLevel.name}<div class="st wip">Prochain niveau</div></div>`);
+  } else {
+    rows.push(`<div class="di"><b>12 niveaux</b>Parcours complet<div class="st ok">Terminé</div></div>`);
+  }
+  rows.push(`<div class="di"><b>Niveaux possédés</b>${owned} / ${total}<div class="st ok">${pct}%</div></div>`);
+  rows.push(`<div class="di"><b>Livre — Système Invisible</b>${MEMBER_DATA.ownedBook?'Débloqué':'Non acheté'}<div class="st ${MEMBER_DATA.ownedBook?'ok':'wip'}">${MEMBER_DATA.ownedBook?'Débloqué':'Verrouillé'}</div></div>`);
+  TOMES.forEach(t=>{
+    const has = MEMBER_DATA.ownedTomes.includes(t.id);
+    rows.push(`<div class="di"><b>${t.label.split(' — ')[0]}</b>${has?'Dans ta bibliothèque':'Non acheté'}<div class="st ${has?'ok':'wip'}">${has?'Débloqué':'Verrouillé'}</div></div>`);
+  });
+  items.innerHTML = rows.join('');
+
+  renderMyProducts();
+}
+
+/* ===== MES PRODUITS : grille des achats réels, cliquable pour accéder au contenu.
+   Placeholder d'accès en attendant le vrai backend (Supabase) qui livrera le
+   contenu (ebook PDF, page du niveau, etc.) une fois le paiement Stripe confirmé. */
+function renderMyProducts(){
+  const grid = document.getElementById('myProductsGrid');
+  const empty = document.getElementById('myProductsEmpty');
+  const cards = [];
+
+  MEMBER_DATA.ownedLevels.forEach(n=>{
+    const lvl = LEVELS.find(l=>l.n===n);
+    if(!lvl) return;
+    cards.push({
+      tag: 'Niveau ' + n,
+      name: lvl.name,
+      img: lvl.img,
+      onAccess: ()=>{ closeMyProductModalIfAny(); openLevelModal(lvl); }
+    });
+  });
+
+  const TOME_TITLES = {
+    'I':  "Le Système Invisible",
+    'II': "Le Miroir Invisible",
+    'III':"L'Architecte Invisible",
+  };
+  MEMBER_DATA.ownedTomes.forEach(id=>{
+    cards.push({
+      tag: 'Tome ' + id,
+      name: TOME_TITLES[id] || ('Tome ' + id),
+      img: '',
+      onAccess: ()=>{ showToast('<b>Accès à ton ebook</b><br><span style="color:var(--muted);font-size:.8em;">Le lien de téléchargement sécurisé sera livré ici automatiquement après paiement (backend à venir).</span>'); }
+    });
+  });
+
+  if(MEMBER_DATA.ownedBook){
+    cards.push({
+      tag: 'Livre',
+      name: 'Système Invisible — Livre',
+      img: '',
+      onAccess: ()=>{ showToast('<b>Accès à ton livre</b><br><span style="color:var(--muted);font-size:.8em;">Le lien de téléchargement sécurisé sera livré ici automatiquement après paiement (backend à venir).</span>'); }
+    });
+  }
+
+  if(cards.length === 0){
+    grid.innerHTML = '';
+    grid.classList.remove('has-items');
+    empty.style.display = 'flex';
+    return;
+  }
+
+  grid.classList.add('has-items');
+  empty.style.display = 'none';
+  grid.innerHTML = cards.map((c,i)=>`
+    <div class="my-product-card" data-i="${i}" style="--mp-img:${c.img ? `url('${c.img}')` : 'none'}">
+      <span class="mp-tag">${c.tag}</span>
+      <div class="mp-name">${c.name}</div>
+      <span class="mp-access">Accéder</span>
+    </div>
+  `).join('');
+
+  grid.querySelectorAll('.my-product-card').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      cards[parseInt(el.dataset.i)].onAccess();
+    });
+  });
+}
+function closeMyProductModalIfAny(){ /* placeholder si besoin de fermer une modal parente plus tard */ }
+
+/* ===== TABLEAU DE BORD FINANCIER : calcul en temps réel + sauvegarde locale ===== */
+const FIN_KEY = 'systemeInvisible_findash';
+function finFmt(n){
+  return Math.round(n).toLocaleString('fr-FR') + ' €';
+}
+function finPct(n){
+  if(!isFinite(n)) n = 0;
+  return Math.round(n) + '%';
+}
+function sumGroup(g){
+  let s = 0;
+  document.querySelectorAll(`.fin-input[data-group="${g}"]`).forEach(i=>{ s += parseFloat(i.value) || 0; });
+  return s;
+}
+/* Met à jour un élément texte, et déclenche un flash visuel si la valeur a changé */
+function finSet(id, text){
+  const el = document.getElementById(id);
+  if(el.textContent === text) return;
+  el.textContent = text;
+  el.classList.remove('fin-flash');
+  void el.offsetWidth; // force le reflow pour relancer l'animation
+  el.classList.add('fin-flash');
+}
+function calcFinDashboard(){
+  const revenus = sumGroup('revenus');
+  const charges = sumGroup('charges');
+  const patPlus = sumGroup('patrimoine-plus');
+  const patMinus = sumGroup('patrimoine-minus');
+  const patrimoineNet = patPlus - patMinus;
+  const cashflow = sumGroup('cashflow');
+  const epargne = parseFloat(document.getElementById('finEpargne').value) || 0;
+  const invest = parseFloat(document.getElementById('finInvest').value) || 0;
+  const objectif = parseFloat(document.getElementById('finObjectif').value) || 0;
+  const dateVal = document.getElementById('finDate').value;
+
+  finSet('finTotalRevenus', finFmt(revenus));
+  finSet('finTotalCharges', finFmt(charges));
+  finSet('finPatrimoineNet', finFmt(patrimoineNet));
+  finSet('finTotalCashflow', finFmt(cashflow));
+
+  document.getElementById('recapRevenus').textContent = finFmt(revenus);
+  document.getElementById('recapCharges').textContent = finFmt(charges);
+  document.getElementById('recapEpargne').textContent = finFmt(epargne);
+  document.getElementById('recapInvest').textContent = finFmt(invest);
+  document.getElementById('recapPatrimoine').textContent = finFmt(patrimoineNet);
+  document.getElementById('recapCashflow').textContent = finFmt(cashflow);
+  document.getElementById('recapObjectif').textContent = finFmt(objectif);
+  document.getElementById('recapDate').textContent = dateVal ? new Date(dateVal).toLocaleDateString('fr-FR') : 'JJ/MM/AAAA';
+
+  /* ===== GAUGE FONCTIONNEL =====
+     L'indice (cash-flow / charges * 100) est mappé sur 0-360° (150% = tour complet).
+     L'aiguille pointe la position réelle du visiteur sur l'anneau des 6 paliers
+     colorés (rouge → orange → or → bleu → vert → cyan), en temps réel. */
+  const indice = charges > 0 ? (cashflow / charges) * 100 : 0;
+  finSet('finIndice', finPct(indice));
+  const clamped = Math.min(Math.max(indice, 0), 150);
+  const needleDeg = (clamped / 150) * 360;
+  document.getElementById('finGaugeNeedle').style.transform = `translate(-50%,0) rotate(${needleDeg}deg)`;
+
+  const bandColors = ['#ef4444','#f97316','#d4a94e','#3b82f6','#4ade80','#22d3ee'];
+  const bandIndex = Math.min(Math.floor(needleDeg / 60), 5);
+  const activeColor = bandColors[bandIndex];
+  document.getElementById('finIndice').style.color = activeColor;
+  document.getElementById('finGauge').style.boxShadow = `0 0 46px ${activeColor}55`;
+
+  const excedent = revenus - charges;
+  const tauxEpargne = revenus > 0 ? (epargne / revenus) * 100 : 0;
+  const tauxInvest = revenus > 0 ? (invest / revenus) * 100 : 0;
+  const couverture = charges > 0 ? (cashflow / charges) * 100 : 0;
+  const ecart = objectif - cashflow;
+
+  finSet('qaExcedent', finFmt(excedent));
+  finSet('qaEpargne', finPct(tauxEpargne));
+  finSet('qaInvest', finPct(tauxInvest));
+  finSet('qaCouverture', finPct(couverture));
+  finSet('qaEcart', finFmt(ecart));
+
+  /* Couleurs dynamiques : vert si favorable, rouge si défavorable */
+  document.getElementById('qaExcedent').style.color = excedent >= 0 ? '#4ade80' : '#f87171';
+  document.getElementById('qaEcart').style.color = ecart <= 0 ? '#4ade80' : '#f87171';
+
+  saveFinDashboard();
+}
+function saveFinDashboard(){
+  const data = {};
+  document.querySelectorAll('.fin-input, .fin-input-solo').forEach(el=>{
+    data[el.id || (el.dataset.group + '_' + Array.from(el.parentNode.parentNode.children).indexOf(el.parentNode))] = el.value;
+  });
+  try{ localStorage.setItem(FIN_KEY, JSON.stringify(data)); }catch(e){}
+}
+function loadFinDashboard(){
+  let data = {};
+  try{ data = JSON.parse(localStorage.getItem(FIN_KEY) || '{}'); }catch(e){}
+  document.querySelectorAll('.fin-input, .fin-input-solo').forEach(el=>{
+    const key = el.id || (el.dataset.group + '_' + Array.from(el.parentNode.parentNode.children).indexOf(el.parentNode));
+    if(data[key] !== undefined) el.value = data[key];
+  });
+}
+document.querySelectorAll('.fin-input, .fin-input-solo').forEach(el=>{
+  el.addEventListener('input', calcFinDashboard);
+});
+document.getElementById('finResetBtn').addEventListener('click', ()=>{
+  document.querySelectorAll('.fin-input, .fin-input-solo').forEach(el=>{ el.value = ''; });
+  try{ localStorage.removeItem(FIN_KEY); }catch(e){}
+  calcFinDashboard();
+  showToast('<b>Tableau de bord réinitialisé</b><br><span style="color:var(--muted);font-size:.8em;">Tous les champs sont remis à zéro.</span>');
+});
+loadFinDashboard();
+calcFinDashboard();
+
+const grid = document.getElementById('tunnelGrid');
+let ticking=false;
+window.addEventListener('scroll',()=>{
+  if(!ticking){
+    requestAnimationFrame(()=>{
+      const y = window.scrollY*0.12;
+      grid.style.backgroundPosition = `0 ${y}px, ${y*0.4}px 0`;
+      ticking=false;
+    });
+    ticking=true;
+  }
+},{passive:true});
+
+/* ===== NIVEAUX : données, grille, modal ===== */
+const LEVELS = [
+  {n:0,  name:"Sortir des dépendances",     desc:"Prendre conscience de la réalité du système dans lequel tu vis, identifier ce qui te retient et faire le ménage intérieur pour reprendre le contrôle.", price:"49 €", img:""},
+  {n:1,  name:"Reprendre le contrôle",      desc:"Comprendre les mécanismes qui dirigent tes choix au quotidien et reprendre la main sur ton temps et tes décisions.", price:"49 €", img:""},
+  {n:2,  name:"Stabiliser ta base",         desc:"Construire une base solide — habitudes, environnement, discipline — sur laquelle bâtir la suite.", price:"59 €", img:""},
+  {n:3,  name:"Sécuriser ta structure",     desc:"Structurer ta vie et tes priorités pour éviter que les efforts se dispersent.", price:"69 €", img:""},
+  {n:4,  name:"Construire tes actifs",      desc:"Créer tes premières sources de valeur durable, au-delà du temps échangé contre de l'argent.", price:"69 €", img:""},
+  {n:5,  name:"Accélérer ta liberté",       desc:"Multiplier l'impact de ce que tu as déjà construit grâce à des leviers et des systèmes.", price:"99 €", img:""},
+  {n:6,  name:"Optimiser tes flux",         desc:"Affiner ce qui fonctionne déjà, réduire ce qui freine, augmenter ce qui rapporte.", price:"99 €", img:""},
+  {n:7,  name:"Transmettre et multiplier",  desc:"Faire circuler ce que tu as appris et démultiplier les effets par la transmission.", price:"109 €", img:""},
+  {n:8,  name:"Maîtriser le système",       desc:"Avoir une vision claire et globale de l'ensemble de ta structure personnelle.", price:"109 €", img:""},
+  {n:9,  name:"Devenir légende",            desc:"Ton influence dépasse ton cercle proche — ton rayonnement devient un actif à part entière.", price:"159 €", img:""},
+  {n:10, name:"Héritage éternel",           desc:"Construire quelque chose qui continue de produire de la valeur après ton implication directe.", price:"159 €", img:""},
+  {n:11, name:"Maîtrise totale — 5 sources",desc:"Le niveau ultime : cinq sources de revenus actives et une liberté pleinement structurelle.", price:"209 €", img:""},
+];
+
+const levelsGrid = document.getElementById('levelsGrid');
+LEVELS.forEach(lvl=>{
+  const card = document.createElement('div');
+  card.className = 'level-card' + (lvl.n>=9 ? ' gold' : '');
+  card.style.setProperty('--lvl-img', lvl.img ? `url('${lvl.img}')` : 'none');
+  card.tabIndex = 0;
+  card.setAttribute('role','button');
+  card.innerHTML = `<span class="n-label">Niveau</span><div class="n-num">${lvl.n}</div><div class="n-name">${lvl.name}</div><div class="n-click">Voir le détail</div>`;
+  card.addEventListener('click', ()=>openLevelModal(lvl));
+  card.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' ') openLevelModal(lvl); });
+  levelsGrid.appendChild(card);
+});
+renderDashboard();
+
+const levelModal = document.getElementById('levelModal');
+function openLevelModal(lvl){
+  document.getElementById('modalNum').textContent = 'Niveau ' + lvl.n;
+  document.getElementById('modalHero').style.setProperty('--modal-img', lvl.img ? `url('${lvl.img}')` : 'none');
+  document.getElementById('modalName').textContent = lvl.name;
+  document.getElementById('modalDesc').textContent = lvl.desc;
+  document.getElementById('modalPrice').textContent = lvl.price;
+  document.getElementById('modalBuyBtn').onclick = ()=>{
+    /* Le livre "Système Invisible" débloque la progression : niveau 0 accessible
+       librement, mais les niveaux 1+ nécessitent d'avoir acquis le livre d'abord. */
+    if(lvl.n > 0 && !MEMBER_DATA.ownedBook){
+      showToast('<b>Niveau verrouillé</b><br><span style="color:var(--muted);font-size:.8em;">Débloque ta progression avec le livre « Système Invisible ».</span>');
+      closeLevelModal();
+      document.getElementById('livre').scrollIntoView({behavior:'smooth'});
+      return;
+    }
+    if(!MEMBER_DATA.ownedLevels.includes(lvl.n)){
+      MEMBER_DATA.ownedLevels.push(lvl.n);
+      saveMemberData();
+      renderDashboard();
+    }
+    showToast('<b>Achat simulé :</b> Niveau ' + lvl.n + ' — ' + lvl.name + '<br><span style="color:var(--muted);font-size:.8em;">Lien Stripe à venir · ton espace membre local est mis à jour.</span>');
+    closeLevelModal();
+  };
+  levelModal.classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeLevelModal(){
+  levelModal.classList.remove('open');
+  document.body.style.overflow='';
+}
+levelModal.addEventListener('click', e=>{ if(e.target===levelModal) closeLevelModal(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeLevelModal(); closeQuiz(); } });
+
+/* ===== QUIZ DIAGNOSTIC =====
+   Chaque réponse porte un score de niveau (0 à 11). Le score final = moyenne
+   arrondie des réponses => mappé directement sur LEVELS[n] (nom + description
+   déjà définis plus haut, une seule source de vérité).
+   Pour ajouter/modifier une question : édite le tableau QUIZ ci-dessous.
+   "score" = le niveau (0-11) que représente cette réponse. */
+const QUIZ = [
+  // A. AUTONOMIE FINANCIÈRE
+  {cat:"Autonomie financière", q:"Combien de mois pourrais-tu vivre sans aucun revenu ?", opts:[
+    {t:"Moins d'1 mois",score:0},{t:"1 à 3 mois",score:5},{t:"3 à 6 mois",score:10},{t:"6 à 12 mois",score:15},{t:"Plus de 12 mois",score:20}]},
+  {cat:"Autonomie financière", q:"Tes revenus continuent-ils lorsque tu dors, es en vacances ou ne travailles pas ?", opts:[
+    {t:"Jamais",score:0},{t:"Rarement",score:5},{t:"Parfois",score:10},{t:"Souvent",score:15},{t:"Toujours",score:20}]},
+  {cat:"Autonomie financière", q:"Possèdes-tu des actifs qui génèrent des revenus ?", opts:[
+    {t:"Aucun",score:0},{t:"Peu (1 actif)",score:5},{t:"Quelques-uns (2 à 3)",score:10},{t:"Plusieurs (4 à 6)",score:15},{t:"Beaucoup (+6)",score:20}]},
+  {cat:"Autonomie financière", q:"Combien de sources de revenus actives as-tu aujourd'hui ?", opts:[
+    {t:"1 seule",score:0},{t:"2",score:5},{t:"3",score:10},{t:"4 à 5",score:15},{t:"6 ou plus",score:20}]},
+  {cat:"Autonomie financière", q:"Quel pourcentage de tes revenus provient de sources indépendantes de ton temps ?", opts:[
+    {t:"0%",score:0},{t:"1 à 10%",score:5},{t:"11 à 30%",score:10},{t:"31 à 50%",score:15},{t:"Plus de 50%",score:20}]},
+  {cat:"Autonomie financière", q:"As-tu une épargne de sécurité disponible facilement ?", opts:[
+    {t:"Aucune",score:0},{t:"Moins d'1 mois",score:5},{t:"1 à 3 mois",score:10},{t:"3 à 6 mois",score:15},{t:"Plus de 6 mois",score:20}]},
+
+  // B. MAÎTRISE DES DÉPENSES
+  {cat:"Maîtrise des dépenses", q:"Tes dépenses mensuelles sont-elles inférieures à tes revenus ?", opts:[
+    {t:"Non, je suis à découvert",score:0},{t:"Non, j'épargne très peu",score:5},{t:"Oui, et j'épargne régulièrement",score:15},{t:"Oui, et j'investis",score:20}]},
+  {cat:"Maîtrise des dépenses", q:"As-tu des dettes à la consommation (crédits, cartes, etc.) ?", opts:[
+    {t:"Beaucoup",score:0},{t:"Quelques-unes",score:5},{t:"Très peu",score:10},{t:"Aucune",score:15}]},
+  {cat:"Maîtrise des dépenses", q:"Ton niveau de vie dépend-il de ton salaire actuel ?", opts:[
+    {t:"Entièrement",score:0},{t:"En grande partie",score:5},{t:"Modérément",score:10},{t:"Peu",score:15},{t:"Pas du tout",score:20}]},
+  {cat:"Maîtrise des dépenses", q:"Es-tu capable de faire face à une dépense imprévue de 1000€ ?", opts:[
+    {t:"Impossible",score:0},{t:"Très difficilement",score:5},{t:"Difficilement",score:10},{t:"Facilement",score:15},{t:"Très facilement",score:20}]},
+  {cat:"Maîtrise des dépenses", q:"As-tu un budget mensuel clair et suivi ?", opts:[
+    {t:"Jamais",score:0},{t:"Parfois",score:5},{t:"Souvent",score:10},{t:"Oui systématiquement",score:15},{t:"Oui et optimisé",score:20}]},
+  {cat:"Maîtrise des dépenses", q:"Investis-tu régulièrement une partie de ton argent ?", opts:[
+    {t:"Jamais",score:0},{t:"Rarement",score:5},{t:"Parfois",score:10},{t:"Régulièrement",score:15},{t:"Systématiquement",score:20}]},
+
+  // C. GESTION DU TEMPS
+  {cat:"Gestion du temps", q:"Combien d'heures vends-tu chaque semaine contre de l'argent ?", opts:[
+    {t:"Plus de 40h",score:0},{t:"31 à 40h",score:5},{t:"21 à 30h",score:10},{t:"11 à 20h",score:15},{t:"Moins de 10h",score:20}]},
+  {cat:"Gestion du temps", q:"Ton travail te laisse-t-il du temps pour tes projets personnels ?", opts:[
+    {t:"Jamais",score:0},{t:"Rarement",score:5},{t:"Parfois",score:10},{t:"Souvent",score:15},{t:"Toujours",score:20}]},
+  {cat:"Gestion du temps", q:"As-tu du temps pour ta famille, ta santé et tes passions ?", opts:[
+    {t:"Jamais",score:0},{t:"Rarement",score:5},{t:"Parfois",score:10},{t:"Souvent",score:15},{t:"Toujours",score:20}]},
+  {cat:"Gestion du temps", q:"Ton calendrier reflète-t-il tes priorités ou celles des autres ?", opts:[
+    {t:"Celles des autres",score:0},{t:"Plutôt celles des autres",score:5},{t:"Équilibré",score:10},{t:"Plutôt les miennes",score:15},{t:"Totalement les miennes",score:20}]},
+  {cat:"Gestion du temps", q:"Délègues-tu ou automatises-tu certaines tâches ?", opts:[
+    {t:"Jamais",score:0},{t:"Rarement",score:5},{t:"Parfois",score:10},{t:"Souvent",score:15},{t:"Toujours",score:20}]},
+  {cat:"Gestion du temps", q:"Crées-tu des systèmes qui te font gagner du temps ?", opts:[
+    {t:"Jamais",score:0},{t:"Rarement",score:5},{t:"Parfois",score:10},{t:"Souvent",score:15},{t:"Toujours",score:20}]},
+
+  // D. INDÉPENDANCE ET CONTRÔLE
+  {cat:"Indépendance et contrôle", q:"Ton revenu dépend-il d'un seul employeur ou client ?", opts:[
+    {t:"Oui, totalement",score:0},{t:"Oui, en grande partie",score:5},{t:"Partiellement",score:10},{t:"Peu",score:15},{t:"Pas du tout",score:20}]},
+  {cat:"Indépendance et contrôle", q:"Prends-tu toi-même les décisions importantes de ta vie ?", opts:[
+    {t:"Jamais",score:0},{t:"Rarement",score:5},{t:"Parfois",score:10},{t:"Souvent",score:15},{t:"Toujours",score:20}]},
+  {cat:"Indépendance et contrôle", q:"Es-tu protégé contre les crises (perte d'emploi, maladie, etc.) ?", opts:[
+    {t:"Pas du tout",score:0},{t:"Peu",score:5},{t:"Moyennement",score:10},{t:"Bien",score:15},{t:"Très bien",score:20}]},
+  {cat:"Indépendance et contrôle", q:"Vis-tu selon tes valeurs ou selon ce que la société attend de toi ?", opts:[
+    {t:"Selon la société",score:0},{t:"Plutôt selon la société",score:5},{t:"Équilibré",score:10},{t:"Plutôt selon mes valeurs",score:15},{t:"Totalement selon mes valeurs",score:20}]},
+  {cat:"Indépendance et contrôle", q:"As-tu une vision claire de ton avenir à 5, 10 ou 20 ans ?", opts:[
+    {t:"Aucune",score:0},{t:"Floue",score:5},{t:"Moyenne",score:10},{t:"Claire",score:15},{t:"Très claire",score:20}]},
+  {cat:"Indépendance et contrôle", q:"Te sens-tu libre dans tes choix aujourd'hui ?", opts:[
+    {t:"Pas du tout",score:0},{t:"Peu",score:5},{t:"Moyennement",score:10},{t:"Beaucoup",score:15},{t:"Totalement",score:20}]},
+
+  // E. DÉVELOPPEMENT ET PROGRESSION
+  {cat:"Développement et progression", q:"Investis-tu dans ton développement personnel ou professionnel ?", opts:[
+    {t:"Jamais",score:0},{t:"Rarement",score:5},{t:"Parfois",score:10},{t:"Régulièrement",score:15},{t:"Systématiquement",score:20}]},
+  {cat:"Développement et progression", q:"Lis-tu, apprends-tu ou te formes-tu régulièrement ?", opts:[
+    {t:"Jamais",score:0},{t:"Rarement",score:5},{t:"Parfois",score:10},{t:"Régulièrement",score:15},{t:"Systématiquement",score:20}]},
+  {cat:"Développement et progression", q:"Es-tu entouré de personnes qui t'élèvent et t'inspirent ?", opts:[
+    {t:"Jamais",score:0},{t:"Rarement",score:5},{t:"Parfois",score:10},{t:"Souvent",score:15},{t:"Toujours",score:20}]},
+  {cat:"Développement et progression", q:"Es-tu dans une logique de croissance ou de survie ?", opts:[
+    {t:"Survie",score:0},{t:"Plutôt survie",score:5},{t:"Équilibré",score:10},{t:"Plutôt croissance",score:15},{t:"Croissance",score:20}]},
+  {cat:"Développement et progression", q:"Prends-tu des actions concrètes chaque semaine pour améliorer ta situation ?", opts:[
+    {t:"Jamais",score:0},{t:"Rarement",score:5},{t:"Parfois",score:10},{t:"Souvent",score:15},{t:"Toujours",score:20}]},
+  {cat:"Développement et progression", q:"Te sens-tu en capacité d'atteindre la liberté financière ?", opts:[
+    {t:"Pas du tout",score:0},{t:"Peu",score:5},{t:"Moyennement",score:10},{t:"Beaucoup",score:15},{t:"Totalement",score:20}]},
+];
+
+let quizIndex = 0;
+let quizScores = [];
+const quizModal = document.getElementById('quizModal');
+const quizContent = document.getElementById('quizContent');
+
+document.getElementById('openQuizBtn').addEventListener('click', openQuiz);
+
+function openQuiz(){
+  quizIndex = 0;
+  quizScores = [];
+  renderQuizQuestion();
+  quizModal.classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeQuiz(){
+  quizModal.classList.remove('open');
+  document.body.style.overflow='';
+}
+quizModal.addEventListener('click', e=>{ if(e.target===quizModal) closeQuiz(); });
+
+function renderQuizProgress(){
+  const pct = Math.round((quizIndex / QUIZ.length) * 100);
+  return `<div class="quiz-progress-wrap">
+    <div class="quiz-progress-label"><span>Question <b>${quizIndex+1}</b> / ${QUIZ.length}</span><span>${pct}%</span></div>
+    <div class="quiz-progress-bar"><i style="width:${pct}%"></i></div>
+  </div>`;
+}
+
+function renderQuizQuestion(){
+  const item = QUIZ[quizIndex];
+  const optsHtml = item.opts.map((o,i)=>`<button class="quiz-opt" data-i="${i}">${o.t}</button>`).join('');
+  quizContent.innerHTML = `
+    ${renderQuizProgress()}
+    <div class="quiz-cat">${item.cat}</div>
+    <div class="quiz-q">${item.q}</div>
+    <div class="quiz-opts">${optsHtml}</div>
+  `;
+  quizContent.querySelectorAll('.quiz-opt').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const opt = item.opts[parseInt(btn.dataset.i)];
+      quizScores.push(opt.score);
+      quizIndex++;
+      if(quizIndex < QUIZ.length){
+        renderQuizQuestion();
+      } else {
+        renderQuizResult();
+      }
+    });
+  });
+}
+
+function animateGaugeCount(target){
+  const el = document.getElementById('gaugeVal');
+  let cur = 0;
+  const step = ()=>{
+    cur++;
+    el.textContent = cur;
+    if(cur < target) requestAnimationFrame(()=>setTimeout(step, 90));
+  };
+  if(target === 0){ el.textContent = 0; return; }
+  step();
+}
+
+const QUIZ_MAX_SCORE = 600;
+function computeLevel(){
+  const total = quizScores.reduce((a,b)=>a+b,0);
+  let n = Math.round((total / QUIZ_MAX_SCORE) * 11);
+  if(n < 0) n = 0;
+  if(n > 11) n = 11;
+  return { n, total };
+}
+
+function renderQuizResult(){
+  const { n, total } = computeLevel();
+  const lvl = LEVELS.find(l=>l.n===n);
+
+  MEMBER_DATA.diagLevel = n;
+  saveMemberData();
+  renderDashboard();
+
+  animateGaugeCount(n);
+  const fillPct = n / 11;
+  const dashoffset = 565 - (565 * fillPct * 0.75);
+  document.getElementById('gaugeFill').style.strokeDashoffset = dashoffset;
+
+  quizContent.innerHTML = `
+    <div class="quiz-result">
+      <div class="qr-eyebrow">Ton résultat</div>
+      <div class="qr-score">${total} / ${QUIZ_MAX_SCORE} points</div>
+      <div class="qr-num">${n}</div>
+      <div class="qr-name">${lvl.name}</div>
+      <div class="qr-desc">${lvl.desc}</div>
+      <button class="btn btn-gold" id="quizToLevel">Voir le détail de ce niveau</button>
+      <button class="btn btn-ghost" id="quizRedo" style="margin-top:10px;">Refaire le Test de Liberté</button>
+    </div>
+  `;
+  document.getElementById('quizToLevel').addEventListener('click', ()=>{
+    closeQuiz();
+    openLevelModal(lvl);
+  });
+  document.getElementById('quizRedo').addEventListener('click', openQuiz);
+}
+
+/* Boutons "Acheter" de la Saga */
+document.querySelectorAll('[data-buy]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const label = btn.dataset.buy;
+    let addedTomes = [];
+    if(label.startsWith('Trilogie')){
+      addedTomes = ['I','II','III'];
+    } else {
+      const match = label.match(/Tome (I{1,3})/);
+      if(match) addedTomes = [match[1]];
+    }
+    addedTomes.forEach(id=>{
+      if(!MEMBER_DATA.ownedTomes.includes(id)) MEMBER_DATA.ownedTomes.push(id);
+    });
+    if(addedTomes.length){ saveMemberData(); renderDashboard(); }
+    showToast('<b>Achat simulé :</b> ' + label + '<br><span style="color:var(--muted);font-size:.8em;">Lien Stripe à venir · ton espace membre local est mis à jour.</span>');
+  });
+});
+
+/* Boutons "Acheter" des Packs */
+const PACKS = {
+  decouverte: { label: 'Pack Découverte', levels: [0] },
+  evolution:  { label: 'Pack Évolution', levels: [0,1,2,3,4,5] },
+};
+document.querySelectorAll('[data-pack]').forEach(btn=>{
+  btn.addEventListener('click', e=>{
+    e.preventDefault();
+    const pack = PACKS[btn.dataset.pack];
+    if(!pack) return;
+    let added = false;
+    pack.levels.forEach(n=>{
+      if(!MEMBER_DATA.ownedLevels.includes(n)){ MEMBER_DATA.ownedLevels.push(n); added = true; }
+    });
+    if(!MEMBER_DATA.ownedBook){ MEMBER_DATA.ownedBook = true; added = true; }
+    if(added){ saveMemberData(); renderDashboard(); }
+    showToast('<b>Achat simulé :</b> ' + pack.label + '<br><span style="color:var(--muted);font-size:.8em;">Lien Stripe à venir · niveaux et livre débloqués dans ton espace membre local.</span>');
+    document.getElementById('espace').scrollIntoView({behavior:'smooth'});
+  });
+});
+
+/* Achat du livre "Système Invisible" : débloque la progression dans les niveaux */
+document.getElementById('buyLivreBtn').addEventListener('click', ()=>{
+  MEMBER_DATA.ownedBook = true;
+  saveMemberData();
+  renderDashboard();
+  showToast('<b>Livre débloqué :</b> Système Invisible<br><span style="color:var(--muted);font-size:.8em;">Lien Stripe à venir · tu peux maintenant progresser dans les niveaux.</span>');
+});
+
+/* Formulaire "Plan de la Liberté" */
+const planForm = document.getElementById('planForm');
+planForm.addEventListener('submit', e=>{
+  e.preventDefault();
+  const name = document.getElementById('planName').value.trim();
+  const email = document.getElementById('planEmail').value.trim();
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  if(!name || !emailOk){
+    showToast('Merci de renseigner un nom et un email valide.');
+    return;
+  }
+  try{
+    const leads = JSON.parse(localStorage.getItem('systemeInvisible_leads') || '[]');
+    leads.push({ name, email, date: new Date().toISOString() });
+    localStorage.setItem('systemeInvisible_leads', JSON.stringify(leads));
+  }catch(err){}
+  document.getElementById('planNote').textContent = 'Merci ' + name + ' — ton Plan de la Liberté arrive à ' + email + ' (connexion email réelle à venir).';
+  planForm.reset();
+  showToast('<b>Inscription enregistrée</b><br><span style="color:var(--muted);font-size:.8em;">L\'envoi automatique par email sera branché plus tard.</span>');
+});
+</script>
+</body>
+</html>
