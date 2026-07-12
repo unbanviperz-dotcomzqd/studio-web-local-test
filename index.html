@@ -7281,6 +7281,9 @@ function applyStripeUnlock(key){
     });
     const data = await res.json();
     verified = !!data.valid;
+    if(!verified && data.reason==='already_redeemed'){
+      showToast('<b>Lien déjà utilisé</b><br><span style="color:var(--muted);font-size:.8em;">Ce paiement a déjà débloqué le produit sur un autre appareil. Contacte-nous si besoin.</span>');
+    }
   }catch(err){
     console.error('verify-purchase:', err);
     verified = false; /* en cas de doute, on NE débloque PAS */

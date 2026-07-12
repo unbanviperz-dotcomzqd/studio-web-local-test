@@ -1,9 +1,10 @@
 {
-  "name": "studio-web-local-test",
+  "name": "systeme-invisible-site",
   "version": "1.0.0",
   "private": true,
   "dependencies": {
     "stripe": "^16.12.0",
-    "@supabase/supabase-js": "^2.45.4"
+    "@supabase/supabase-js": "^2.45.4",
+    "@netlify/blobs": "^8.1.0"
   }
 }
