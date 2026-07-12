@@ -1694,15 +1694,25 @@ footer a:hover{color:var(--ink);}
   <div class="f-top">
     <a class="logo" href="#top"><img src="assets/logo.png" alt="Système Invisible" class="logo-img" width="30" height="30"> Système Invisible</a>
     <div class="f-links">
-      <a href="#">Mentions légales</a>
-      <a href="#">CGV</a>
-      <a href="#">Politique de confidentialité</a>
-      <a href="#">Gestion des cookies</a>
-      <a href="#">Politique de remboursement</a>
-      <a href="#">Contact</a>
-      <a href="#">FAQ</a>
-      <a href="#">Newsletter</a>
-      <a href="#">Réseaux sociaux</a>
+      <a href="#" onclick="openLegalModal('mentions');return false;">Mentions légales</a>
+      <a href="#" onclick="openLegalModal('cgv');return false;">CGV</a>
+      <a href="#" onclick="openLegalModal('confidentialite');return false;">Politique de confidentialité</a>
+      <a href="#" onclick="openLegalModal('cookies');return false;">Gestion des cookies</a>
+      <a href="#" onclick="openLegalModal('remboursement');return false;">Politique de remboursement</a>
+      <a href="#" onclick="openLegalModal('contact');return false;">Contact</a>
+      <a href="#faq">FAQ</a>
+      <a href="#plan">Newsletter</a>
+      <a href="#" onclick="openLegalModal('social');return false;">Réseaux sociaux</a>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="legalModal">
+    <div class="modal-box" id="legalModalBox" style="max-width:640px;">
+      <button class="modal-close" onclick="closeLegalModal()">✕</button>
+      <div class="modal-body" style="padding-top:36px;">
+        <h3 class="m-name" id="legalModalTitle"></h3>
+        <div class="m-desc" id="legalModalBody" style="white-space:pre-line;max-height:60vh;overflow-y:auto;"></div>
+      </div>
     </div>
   </div>
   <div class="f-bottom">
@@ -7629,6 +7639,142 @@ function openAvisModal(){
   document.getElementById('avisModal').classList.add('open');
 }
 function closeAvisModal(){ document.getElementById('avisModal').classList.remove('open'); }
+
+/* ===== Contenu légal (mentions, CGV, confidentialité, cookies, remboursement, contact) ===== */
+const LEGAL_CONTENT = {
+  mentions: { title:"Mentions légales", body:
+`Éditeur du site
+Le site Système Invisible (systeme-invisible.com) est édité par :
+[À COMPLÉTER : nom / raison sociale du responsable — ex. Cédric Marguier]
+[À COMPLÉTER : statut juridique — auto-entrepreneur / EURL / SASU…]
+[À COMPLÉTER : numéro SIRET]
+[À COMPLÉTER : adresse professionnelle]
+Email : systemeinvisiblecom@gmail.com
+
+Directeur de la publication
+[À COMPLÉTER : nom du responsable de publication]
+
+Hébergement
+Netlify, Inc.
+2325 3rd Street, Suite 215, San Francisco, CA 94107, États-Unis
+https://www.netlify.com
+
+Nom de domaine
+Enregistré via OVH SAS, 2 rue Kellermann, 59100 Roubaix, France.
+
+Propriété intellectuelle
+L'ensemble des contenus présents sur ce site (textes, méthode, mise en page, niveaux, tomes, illustrations) sont protégés par le droit d'auteur. Toute reproduction, représentation ou diffusion non autorisée est interdite.
+
+Responsabilité
+L'éditeur s'efforce d'assurer l'exactitude des informations diffusées, sans garantie d'exhaustivité. L'éditeur ne saurait être tenu responsable des dommages résultant de l'utilisation du site.
+
+Droit applicable
+Les présentes mentions légales sont soumises au droit français.` },
+
+  cgv: { title:"Conditions Générales de Vente", body:
+`Article 1 — Objet
+Les présentes CGV régissent les ventes réalisées sur systeme-invisible.com : livre "Système Invisible" (numérique et physique), niveaux de progression, tomes de la saga, packs et produits associés.
+
+Article 2 — Produits et prix
+Les prix sont indiqués en euros. [À COMPLÉTER selon régime fiscal : "TVA non applicable, art. 293 B du CGI" ou taux de TVA applicable]. Les produits sont facturés au tarif en vigueur au moment de la commande.
+
+Article 3 — Commande et paiement
+Le paiement est exigible immédiatement à la commande et s'effectue de manière sécurisée via Stripe. Le site ne stocke aucune donnée bancaire.
+
+Article 4 — Livraison des produits numériques
+Les contenus numériques sont accessibles immédiatement après confirmation du paiement, depuis l'espace "Mes Produits". Aucun fichier téléchargeable n'est fourni : l'accès se fait exclusivement en ligne.
+
+Article 5 — Livraison des produits physiques
+L'exemplaire physique est expédié à l'adresse renseignée lors de l'achat. En attendant réception, la version numérique équivalente est accessible immédiatement.
+
+Article 6 — Droit de rétractation
+Conformément à l'article L221-28 du Code de la consommation, le droit de rétractation ne s'applique pas aux contenus numériques dont l'exécution a commencé avec l'accord exprès du client, qui renonce ainsi à ce droit en accédant immédiatement au contenu. Pour les produits physiques non utilisés, le délai légal de rétractation de 14 jours s'applique.
+
+Article 7 — Responsabilité
+Le vendeur ne saurait être tenu responsable en cas de force majeure ou de perturbation des services postaux.
+
+Article 8 — Droit applicable
+Les présentes CGV sont soumises au droit français.` },
+
+  confidentialite: { title:"Politique de confidentialité", body:
+`1. Données collectées
+Selon vos interactions : nom, téléphone, email, adresse postale (formulaire "Plan de la Liberté", achats), avis clients (prénom, note, texte).
+
+2. Finalités
+— Envoi du guide "Plan de la Liberté"
+— Gestion et suivi des commandes
+— Expédition des produits physiques
+— Publication des avis clients (réservée aux acheteurs vérifiés du livre)
+— Support client
+
+3. Base légale
+Consentement (formulaires) et exécution du contrat de vente (achats).
+
+4. Destinataires des données
+Vos données peuvent être transmises, dans la stricte limite nécessaire, à :
+— Stripe (paiements)
+— EmailJS (envoi d'emails automatiques)
+— Netlify (hébergement)
+Aucune donnée n'est vendue à des tiers.
+
+5. Durée de conservation
+Le temps nécessaire aux finalités décrites, et conformément aux obligations légales de conservation.
+
+6. Vos droits
+Conformément au RGPD : droit d'accès, de rectification, d'effacement, de limitation, d'opposition et de portabilité. Exercice de ces droits : systemeinvisiblecom@gmail.com
+
+7. Sécurité
+Données hébergées en Europe, transmises en HTTPS. Aucune donnée bancaire n'est stockée sur nos serveurs.` },
+
+  cookies: { title:"Gestion des cookies", body:
+`Cookies techniques
+Ce site utilise le stockage local de votre navigateur (localStorage) pour mémoriser votre progression, vos préférences et votre panier. Ces données restent sur votre appareil et ne sont jamais transmises à des fins publicitaires.
+
+Prestataires tiers
+Lors du paiement, vous êtes redirigé vers Stripe, qui peut déposer ses propres cookies techniques nécessaires à la sécurisation de la transaction. Les polices de caractères sont chargées depuis Google Fonts, ce qui implique une requête technique vers les serveurs Google.
+
+Pas de cookies publicitaires
+Ce site n'utilise aucun cookie de traçage publicitaire ni outil de mesure d'audience tiers à ce jour.
+
+Gestion
+Vous pouvez supprimer les données stockées localement à tout moment en effaçant les données de navigation de votre navigateur.` },
+
+  remboursement: { title:"Politique de remboursement", body:
+`Contenus numériques
+Les contenus numériques (niveaux, livre numérique), accessibles immédiatement après paiement, ne sont pas remboursables, sauf erreur technique avérée empêchant l'accès. En cas de problème, contactez-nous : nous résolvons rapidement.
+
+Produits physiques
+Délai de rétractation légal de 14 jours à compter de la réception, produit retourné en bon état. Frais de retour à la charge du client, sauf disposition contraire.
+
+Comment demander un remboursement
+Par email à systemeinvisiblecom@gmail.com, en précisant votre nom, l'email utilisé à l'achat et le produit concerné. Réponse sous 48h ouvrées.` },
+
+  contact: { title:"Contact", body:
+`Une question, un souci avec votre commande, ou simplement envie d'échanger ?
+
+Email : systemeinvisiblecom@gmail.com
+Réponse généralement sous 48h ouvrées.
+
+Merci d'indiquer dans votre message :
+— votre nom
+— l'adresse email utilisée lors de l'achat
+— le produit concerné` },
+
+  social: { title:"Réseaux sociaux", body:
+`Nos réseaux sociaux arrivent bientôt !
+
+En attendant, retrouve toutes les actualités directement via le Plan de la Liberté et les emails de la communauté.` }
+};
+
+function openLegalModal(key){
+  const data = LEGAL_CONTENT[key];
+  if(!data) return;
+  document.getElementById('legalModalTitle').textContent = data.title;
+  document.getElementById('legalModalBody').textContent = data.body;
+  document.getElementById('legalModal').classList.add('open');
+}
+function closeLegalModal(){ document.getElementById('legalModal').classList.remove('open'); }
+document.getElementById('legalModal').addEventListener('click', e=>{ if(e.target.id==='legalModal') closeLegalModal(); });
 document.getElementById('avisOpenBtn').addEventListener('click', openAvisModal);
 document.getElementById('avisModal').addEventListener('click', e=>{ if(e.target.id==='avisModal') closeAvisModal(); });
 
