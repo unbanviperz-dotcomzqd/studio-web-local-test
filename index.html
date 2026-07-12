@@ -865,8 +865,6 @@ footer a:hover{color:var(--ink);}
 </style>
 <!-- EmailJS : envoi d'emails directement depuis le navigateur, sans serveur -->
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<!-- Supabase : base de données partagée, pour que les avis soient visibles par tous les visiteurs -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body class="no-js">
 
@@ -1688,19 +1686,6 @@ const PLAN_PDF_PATH             = "assets/plan-liberte.pdf"; /* chemin relatif u
 
 const emailJsReady = EMAILJS_PUBLIC_KEY.indexOf('COLLEZ_ICI')===-1;
 if(emailJsReady && window.emailjs){ emailjs.init(EMAILJS_PUBLIC_KEY); }
-
-/* ============================================================
-   SUPABASE — base de données partagée pour les avis clients.
-   Tant que SUPABASE_URL vaut "COLLEZ_ICI...", les avis restent
-   uniquement stockés dans le navigateur (comme aujourd'hui).
-   Une fois renseigné, TOUS les visiteurs voient les mêmes avis,
-   dans le même ordre, en temps réel.
-   Clé "anon public" uniquement ici — jamais la clé "service_role".
-   ============================================================ */
-const SUPABASE_URL      = "COLLEZ_ICI_URL_SUPABASE";
-const SUPABASE_ANON_KEY = "COLLEZ_ICI_CLE_ANON_PUBLIC";
-const supabaseReady = SUPABASE_URL.indexOf('COLLEZ_ICI')===-1 && window.supabase;
-const sbClient = supabaseReady ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
 /* ============================================================
    PAIEMENT STRIPE DYNAMIQUE — via la fonction Netlify
@@ -7477,7 +7462,7 @@ function avisInitials(name){
 let AVIS_USER = [];
 try{ AVIS_USER = JSON.parse(localStorage.getItem(AVIS_KEY) || '[]'); }catch(e){ AVIS_USER = []; }
 
-/* null = pas encore chargé depuis Supabase (on utilise alors AVIS_USER + AVIS_SEED en local) */
+/* null = pas encore chargé depuis le serveur (on utilise alors AVIS_USER + AVIS_SEED en local) */
 let AVIS_REMOTE = null;
 
 const AVIS_INITIAL_VISIBLE = 6;
@@ -7495,7 +7480,8 @@ function avisSortLevel(r){
 }
 
 function avisSortedList(){
-  const all = AVIS_REMOTE !== null ? AVIS_REMOTE : [...AVIS_USER, ...AVIS_SEED];
+  /* avis partagés (serveur) + avis "démo" toujours affichés en toile de fond */
+  const all = AVIS_REMOTE !== null ? [...AVIS_REMOTE, ...AVIS_SEED] : [...AVIS_USER, ...AVIS_SEED];
   if(avisSortMode==='level-desc'){
     return all.slice().sort((a,b)=> avisSortLevel(b)-avisSortLevel(a));
   }
@@ -7505,15 +7491,18 @@ function avisSortedList(){
   return all; /* défaut : ordre d'origine (plus récents en tête côté avis utilisateurs) */
 }
 
-/* Charge les avis partagés depuis Supabase (si configuré) — visible par TOUS les visiteurs */
-async function loadAvisFromSupabase(){
-  if(!supabaseReady) return;
+/* Charge les avis partagés depuis la fonction Netlify (Blobs) — visible par TOUS les visiteurs */
+async function loadAvisFromServer(){
   try{
-    const { data, error } = await sbClient.from('avis').select('*').order('date', { ascending:false });
-    if(error){ console.error('Supabase avis:', error); return; }
-    AVIS_REMOTE = data || [];
+    const res = await fetch('/.netlify/functions/get-avis');
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    AVIS_REMOTE = Array.isArray(data) ? data : [];
     renderAvis();
-  }catch(err){ console.error('Supabase avis:', err); }
+  }catch(err){
+    console.error('get-avis:', err);
+    /* fonction pas encore déployée / indisponible : on garde le mode local (AVIS_USER + AVIS_SEED) */
+  }
 }
 
 function renderAvis(){
@@ -7542,7 +7531,7 @@ function renderAvis(){
   avisLessBtn.style.display = avisVisibleCount>AVIS_INITIAL_VISIBLE ? 'inline-flex' : 'none';
 }
 renderAvis();
-loadAvisFromSupabase();
+loadAvisFromServer();
 
 avisMoreBtn.addEventListener('click', ()=>{
   avisVisibleCount += AVIS_STEP;
@@ -7605,17 +7594,19 @@ document.getElementById('avisForm').addEventListener('submit', async e=>{
     date: new Date().toISOString()
   };
 
-  if(supabaseReady){
-    const { error } = await sbClient.from('avis').insert(review);
-    if(error){
-      console.error('Supabase avis insert:', error);
-      showToast('Erreur lors de l\'envoi de ton avis, réessaie plus tard.');
-      return;
-    }
-    await loadAvisFromSupabase(); /* recharge la liste partagée, visible par tous */
-  } else {
+  try{
+    const res = await fetch('/.netlify/functions/post-avis', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(review)
+    });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    await loadAvisFromServer(); /* recharge la liste partagée, visible par tous */
+  }catch(err){
+    console.error('post-avis:', err);
+    /* fonction pas encore déployée / indisponible : on garde une trace locale en attendant */
     AVIS_USER.unshift(review);
-    try{ localStorage.setItem(AVIS_KEY, JSON.stringify(AVIS_USER)); }catch(err){}
+    try{ localStorage.setItem(AVIS_KEY, JSON.stringify(AVIS_USER)); }catch(e2){}
     renderAvis();
   }
 
