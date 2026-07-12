@@ -1312,7 +1312,7 @@ footer a:hover{color:var(--ink);}
       </div>
       <div class="dashboard">
         <div class="dash-head">
-          <span class="dh-title">Bienvenue, membre 👋</span>
+          <span class="dh-title" id="dashWelcome">Bienvenue, membre 👋</span>
           <span class="dh-user">Progression niveaux</span>
         </div>
         <div class="tome-status-item" id="dashBookStatus" style="margin-bottom:16px;">
@@ -1780,7 +1780,7 @@ document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
 /* ===== ESPACE MEMBRE : dashboard piloté par les produits RÉELLEMENT possédés ===== */
 const STORAGE_KEY = 'systemeInvisible_member';
 function loadMemberData(){
-  const defaults = { ownedLevels: [], ownedTomes: [], ownedBook: false, bookFormat: null, tomeFormats: {}, diagLevel: null };
+  const defaults = { name: null, ownedLevels: [], ownedTomes: [], ownedBook: false, bookFormat: null, tomeFormats: {}, diagLevel: null };
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
     if(raw) return Object.assign(defaults, JSON.parse(raw));
@@ -1793,6 +1793,10 @@ function saveMemberData(){
 const MEMBER_DATA = loadMemberData();
 
 function renderDashboard(){
+  const welcome = document.getElementById('dashWelcome');
+  if(welcome){
+    welcome.textContent = MEMBER_DATA.name ? ('Bienvenue, ' + MEMBER_DATA.name + ' 👋') : 'Bienvenue, membre 👋';
+  }
   const bookBadge = document.getElementById('dashBookBadge');
   if(bookBadge){
     bookBadge.textContent = MEMBER_DATA.ownedBook ? 'Débloqué' : 'Non acheté · Verrouillé';
@@ -7207,6 +7211,11 @@ planForm.addEventListener('submit', e=>{
     localStorage.setItem('systemeInvisible_leads', JSON.stringify(leads));
   }catch(err){}
 
+  /* Le prénom saisi devient le nom du membre, affiché partout sur le site (espace membre, etc.) */
+  MEMBER_DATA.name = name;
+  saveMemberData();
+  renderDashboard();
+
   /* Téléchargement immédiat du PDF depuis le site, au même moment que l'envoi des emails */
   const downloaded = triggerPdfDownload();
 
@@ -7410,7 +7419,11 @@ avisStarPicker.querySelectorAll('span').forEach(s=>{
 });
 
 /* Ouverture / fermeture modale */
-function openAvisModal(){ document.getElementById('avisModal').classList.add('open'); }
+function openAvisModal(){
+  const nameField = document.getElementById('avisFormName');
+  if(nameField && !nameField.value && MEMBER_DATA.name){ nameField.value = MEMBER_DATA.name; }
+  document.getElementById('avisModal').classList.add('open');
+}
 function closeAvisModal(){ document.getElementById('avisModal').classList.remove('open'); }
 document.getElementById('avisOpenBtn').addEventListener('click', openAvisModal);
 document.getElementById('avisModal').addEventListener('click', e=>{ if(e.target.id==='avisModal') closeAvisModal(); });
