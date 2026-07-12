@@ -89,6 +89,8 @@ main,header,footer{position:relative;z-index:1;}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:var(--f-display);font-weight:600;font-size:.85rem;letter-spacing:.04em;
   padding:13px 26px;border-radius:6px;text-decoration:none;cursor:pointer;border:none;transition:transform .25s ease, box-shadow .25s ease;}
 .btn:hover{transform:translateY(-2px);}
+.btn:disabled{cursor:not-allowed;transform:none!important;}
+.btn-gold:disabled{background:rgba(139,150,181,.18);color:var(--muted);box-shadow:none!important;}
 .btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold-soft));color:#0a0f1e;box-shadow:0 0 24px rgba(212,169,78,.25);}
 .btn-gold:hover{box-shadow:0 6px 32px rgba(212,169,78,.45);}
 .btn-ghost{background:transparent;color:var(--blue-glow);border:1px solid var(--line);}
@@ -1016,9 +1018,9 @@ footer a:hover{color:var(--ink);}
           <input type="tel" id="planPhone" placeholder="Numéro de téléphone" aria-label="Numéro de téléphone" required>
           <input type="email" id="planEmail" placeholder="Adresse e-mail" aria-label="Adresse e-mail" required>
           <input type="text" id="planAddress" placeholder="Adresse postale complète (rue, code postal, ville)" aria-label="Adresse postale" required>
-          <button class="btn btn-gold" type="submit">Recevoir gratuitement</button>
+          <button class="btn btn-gold" id="planSubmitBtn" type="submit" disabled>Recevoir gratuitement</button>
         </form>
-        <p class="form-note" id="planNote">Téléchargement immédiat + inscription à la newsletter. Sans engagement. Ton adresse ne sert qu'en cas d'achat physique nécessitant une livraison.</p>
+        <p class="form-note" id="planNote">Remplis tous les champs pour débloquer le téléchargement immédiat. Ton adresse ne sert qu'en cas d'achat physique nécessitant une livraison.</p>
       </div>
     </div>
   </section>
@@ -1679,7 +1681,8 @@ const EMAILJS_SERVICE_ID        = "COLLEZ_ICI_VOTRE_SERVICE_ID";
 const EMAILJS_TEMPLATE_ADMIN    = "COLLEZ_ICI_TEMPLATE_NOTIF_ADMIN";
 const EMAILJS_TEMPLATE_CLIENT   = "COLLEZ_ICI_TEMPLATE_ENVOI_CLIENT";
 const ADMIN_EMAIL               = "tonadresse@pro.com"; /* ton adresse mail pro */
-const PLAN_PDF_URL              = "https://TON-SITE.netlify.app/assets/plan-liberte.pdf"; /* lien public du PDF une fois déployé */
+const PLAN_PDF_URL              = "https://TON-SITE.netlify.app/assets/plan-liberte.pdf"; /* lien inclus dans l'email — à remplir avec l'URL réelle une fois déployé sur Netlify */
+const PLAN_PDF_PATH             = "assets/plan-liberte.pdf"; /* chemin relatif utilisé pour le téléchargement direct sur le site — fonctionne déjà en local */
 
 const emailJsReady = EMAILJS_PUBLIC_KEY.indexOf('COLLEZ_ICI')===-1;
 if(emailJsReady && window.emailjs){ emailjs.init(EMAILJS_PUBLIC_KEY); }
@@ -7157,23 +7160,55 @@ function applyStripeUnlock(key){
 
 /* Formulaire "Plan de la Liberté" */
 const planForm = document.getElementById('planForm');
-planForm.addEventListener('submit', e=>{
-  e.preventDefault();
+const planSubmitBtn = document.getElementById('planSubmitBtn');
+const planFields = ['planName','planPhone','planEmail','planAddress'].map(id=>document.getElementById(id));
+
+function planFormIsValid(){
   const name = document.getElementById('planName').value.trim();
   const phone = document.getElementById('planPhone').value.trim();
   const email = document.getElementById('planEmail').value.trim();
   const address = document.getElementById('planAddress').value.trim();
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const phoneOk = phone.replace(/[^\d]/g,'').length >= 8;
-  if(!name || !emailOk || !phoneOk || !address){
+  return !!(name && emailOk && phoneOk && address);
+}
+function updatePlanButtonState(){
+  planSubmitBtn.disabled = !planFormIsValid();
+}
+planFields.forEach(f=> f.addEventListener('input', updatePlanButtonState));
+updatePlanButtonState();
+
+/* Déclenche un téléchargement direct du PDF depuis le site (en plus de l'email) */
+function triggerPdfDownload(){
+  if(!PLAN_PDF_PATH) return false;
+  const a = document.createElement('a');
+  a.href = PLAN_PDF_PATH;
+  a.download = 'Plan-de-la-Liberte.pdf';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  return true;
+}
+
+planForm.addEventListener('submit', e=>{
+  e.preventDefault();
+  if(!planFormIsValid()){
     showToast('Merci de renseigner nom, téléphone, email et adresse valides.');
     return;
   }
+  const name = document.getElementById('planName').value.trim();
+  const phone = document.getElementById('planPhone').value.trim();
+  const email = document.getElementById('planEmail').value.trim();
+  const address = document.getElementById('planAddress').value.trim();
+
   try{
     const leads = JSON.parse(localStorage.getItem('systemeInvisible_leads') || '[]');
     leads.push({ name, phone, email, address, date: new Date().toISOString() });
     localStorage.setItem('systemeInvisible_leads', JSON.stringify(leads));
   }catch(err){}
+
+  /* Téléchargement immédiat du PDF depuis le site, au même moment que l'envoi des emails */
+  const downloaded = triggerPdfDownload();
 
   if(emailJsReady && window.emailjs){
     /* 1) notification à l'adresse pro avec les coordonnées complètes du lead */
@@ -7182,17 +7217,22 @@ planForm.addEventListener('submit', e=>{
       lead_email: email, lead_address: address,
       lead_date: new Date().toLocaleString('fr-FR')
     }).catch(err=>console.error('EmailJS admin:', err));
-    /* 2) envoi du PDF (lien de téléchargement) au client */
+    /* 2) envoi du PDF (lien de téléchargement, en secours si le téléchargement direct a été bloqué) au client */
     emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_CLIENT, {
       to_email: email, client_name: name, pdf_link: PLAN_PDF_URL
     }).catch(err=>console.error('EmailJS client:', err));
-    document.getElementById('planNote').textContent = 'Merci ' + name + ' — ton Plan de la Liberté vient de partir à ' + email + '.';
-    showToast('<b>Inscription enregistrée</b><br><span style="color:var(--muted);font-size:.8em;">Ton Plan de la Liberté arrive dans ta boîte mail.</span>');
+    document.getElementById('planNote').textContent = downloaded
+      ? 'Merci ' + name + ' — ton téléchargement a démarré, et une copie part aussi à ' + email + '.'
+      : 'Merci ' + name + ' — ton Plan de la Liberté vient de partir à ' + email + '.';
+    showToast('<b>Inscription enregistrée</b><br><span style="color:var(--muted);font-size:.8em;">' + (downloaded ? 'Téléchargement lancé + copie envoyée par email.' : 'Ton Plan de la Liberté arrive dans ta boîte mail.') + '</span>');
   } else {
-    document.getElementById('planNote').textContent = 'Merci ' + name + ' — ton Plan de la Liberté arrive à ' + email + ' (connexion email réelle à venir).';
+    document.getElementById('planNote').textContent = downloaded
+      ? 'Merci ' + name + ' — ton téléchargement a démarré (connexion email réelle à venir).'
+      : 'Merci ' + name + ' — ton Plan de la Liberté arrive à ' + email + ' (connexion email réelle à venir).';
     showToast('<b>Inscription enregistrée</b><br><span style="color:var(--muted);font-size:.8em;">L\'envoi automatique par email sera branché plus tard.</span>');
   }
   planForm.reset();
+  updatePlanButtonState();
 });
 
 /* ===== AVIS CLIENTS ===== */
