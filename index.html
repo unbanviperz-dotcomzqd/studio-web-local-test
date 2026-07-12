@@ -55,7 +55,7 @@ main,header,footer{position:relative;z-index:1;}
 .logo{display:flex;align-items:center;gap:11px;font-family:var(--f-display);font-weight:700;letter-spacing:.07em;font-size:.9rem;text-transform:uppercase;color:var(--ink);text-decoration:none;}
 .logo .inf{font-size:1.45rem;color:var(--gold);line-height:1;transform:translateY(-1px);}
 .logo-img{width:30px!important;height:30px!important;max-width:30px!important;max-height:30px!important;object-fit:contain;flex-shrink:0;display:block;border-radius:6px;}
-.nav-links{display:flex;gap:clamp(2px,.6vw,8px);align-items:center;flex-wrap:nowrap;}
+.nav-links{display:flex;flex:1;justify-content:space-between;align-items:center;flex-wrap:nowrap;margin-left:clamp(24px,4vw,64px);}
 .nav-links a:not(.btn){position:relative;display:flex;align-items:center;gap:7px;color:var(--muted);text-decoration:none;font-size:.78rem;font-weight:500;letter-spacing:.03em;
   padding:9px 13px;border-radius:22px;overflow:hidden;white-space:nowrap;flex-shrink:0;transition:color .3s ease,background .3s ease,transform .3s ease;}
 .nav-links a:not(.btn)::before{content:'';position:absolute;inset:0;border-radius:22px;background:radial-gradient(circle at 30% 50%,rgba(96,165,250,.16),transparent 70%);
@@ -78,11 +78,13 @@ main,header,footer{position:relative;z-index:1;}
 .nav-builder-link .nb-ic{font-size:.85rem;line-height:1;}
 .mobile-menu a.nav-builder-link{border-radius:12px!important;justify-content:center;margin-bottom:6px;}
 .nav-dot.free{color:var(--gold);}
+.nav-dot.ndplan{color:#4ade80;}
 .nav-dot.book{color:var(--blue-glow);}
+.nav-dot.levels{color:#fb923c;}
 .nav-dot.saga{color:#b39bfa;}
-.nav-dot.member{color:var(--gold-soft);}
-.nav-dot.shop{color:var(--blue);}
-.nav-dot.manifesto{color:#f0c674;}
+.nav-dot.member{color:#f472b6;}
+.nav-dot.shop{color:#2dd4bf;}
+.nav-dot.avis{color:#f5c451;}
 .nav-dot.faq{color:var(--muted);}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:var(--f-display);font-weight:600;font-size:.85rem;letter-spacing:.04em;
   padding:13px 26px;border-radius:6px;text-decoration:none;cursor:pointer;border:none;transition:transform .25s ease, box-shadow .25s ease;}
@@ -875,12 +877,13 @@ footer a:hover{color:var(--ink);}
   <nav class="nav-links">
     <a href="https://studioweblocal.com" target="_blank" rel="noopener" class="nav-builder-link"><span class="nb-ic">⚙</span>Constructeur du site</a>
     <a href="#diagnostic"><span class="nav-dot free"></span>Test de Liberté</a>
-    <a href="#plan"><span class="nav-dot free"></span>Plan gratuit</a>
+    <a href="#plan"><span class="nav-dot ndplan"></span>Plan gratuit</a>
     <a href="#livre"><span class="nav-dot book"></span>Système Invisible</a>
-    <a href="#niveaux"><span class="nav-dot book"></span>Les Niveaux</a>
+    <a href="#niveaux"><span class="nav-dot levels"></span>Les Niveaux</a>
     <a href="#saga"><span class="nav-dot saga"></span>La Saga</a>
     <a href="#espace"><span class="nav-dot member"></span>Espace Membre</a>
     <a href="#produits"><span class="nav-dot shop"></span>Mes Produits</a>
+    <a href="#avis"><span class="nav-dot avis"></span>Avis Client</a>
     <a href="#faq"><span class="nav-dot faq"></span>FAQ</a>
     <button class="nav-burger" id="navBurger" aria-label="Ouvrir le menu" aria-expanded="false"><span></span><span></span><span></span></button>
   </nav>
@@ -889,12 +892,13 @@ footer a:hover{color:var(--ink);}
   <div class="mm-inner">
     <a href="https://studioweblocal.com" target="_blank" rel="noopener" class="nav-builder-link"><span class="nb-ic">⚙</span>Constructeur du site</a>
     <a href="#diagnostic"><span class="nav-dot free"></span>Test de Liberté</a>
-    <a href="#plan"><span class="nav-dot free"></span>Plan gratuit</a>
+    <a href="#plan"><span class="nav-dot ndplan"></span>Plan gratuit</a>
     <a href="#livre"><span class="nav-dot book"></span>Système Invisible</a>
-    <a href="#niveaux"><span class="nav-dot book"></span>Les Niveaux</a>
+    <a href="#niveaux"><span class="nav-dot levels"></span>Les Niveaux</a>
     <a href="#saga"><span class="nav-dot saga"></span>La Saga</a>
     <a href="#espace"><span class="nav-dot member"></span>Espace Membre</a>
     <a href="#produits"><span class="nav-dot shop"></span>Mes Produits</a>
+    <a href="#avis"><span class="nav-dot avis"></span>Avis Client</a>
     <a href="#faq"><span class="nav-dot faq"></span>FAQ</a>
   </div>
 </div>
