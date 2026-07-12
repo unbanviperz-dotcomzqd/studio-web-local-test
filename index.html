@@ -1011,10 +1011,12 @@ footer a:hover{color:var(--ink);}
         </ul>
         <form class="form-row" id="planForm">
           <input type="text" id="planName" placeholder="Nom" aria-label="Nom" required>
+          <input type="tel" id="planPhone" placeholder="Numéro de téléphone" aria-label="Numéro de téléphone" required>
           <input type="email" id="planEmail" placeholder="Adresse e-mail" aria-label="Adresse e-mail" required>
+          <input type="text" id="planAddress" placeholder="Adresse postale complète (rue, code postal, ville)" aria-label="Adresse postale" required>
           <button class="btn btn-gold" type="submit">Recevoir gratuitement</button>
         </form>
-        <p class="form-note" id="planNote">Téléchargement immédiat + inscription à la newsletter. Sans engagement.</p>
+        <p class="form-note" id="planNote">Téléchargement immédiat + inscription à la newsletter. Sans engagement. Ton adresse ne sert qu'en cas d'achat physique nécessitant une livraison.</p>
       </div>
     </div>
   </section>
@@ -7045,15 +7047,18 @@ const planForm = document.getElementById('planForm');
 planForm.addEventListener('submit', e=>{
   e.preventDefault();
   const name = document.getElementById('planName').value.trim();
+  const phone = document.getElementById('planPhone').value.trim();
   const email = document.getElementById('planEmail').value.trim();
+  const address = document.getElementById('planAddress').value.trim();
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  if(!name || !emailOk){
-    showToast('Merci de renseigner un nom et un email valide.');
+  const phoneOk = phone.replace(/[^\d]/g,'').length >= 8;
+  if(!name || !emailOk || !phoneOk || !address){
+    showToast('Merci de renseigner nom, téléphone, email et adresse valides.');
     return;
   }
   try{
     const leads = JSON.parse(localStorage.getItem('systemeInvisible_leads') || '[]');
-    leads.push({ name, email, date: new Date().toISOString() });
+    leads.push({ name, phone, email, address, date: new Date().toISOString() });
     localStorage.setItem('systemeInvisible_leads', JSON.stringify(leads));
   }catch(err){}
   document.getElementById('planNote').textContent = 'Merci ' + name + ' — ton Plan de la Liberté arrive à ' + email + ' (connexion email réelle à venir).';
