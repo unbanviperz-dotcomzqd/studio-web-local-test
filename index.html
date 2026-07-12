@@ -1903,7 +1903,7 @@ const io = new IntersectionObserver((entries)=>{
       io.unobserve(e.target);
     }
   });
-},{threshold:.18});
+},{threshold:.01});
 document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
 
 /* ===== ESPACE MEMBRE : dashboard piloté par les produits RÉELLEMENT possédés ===== */
