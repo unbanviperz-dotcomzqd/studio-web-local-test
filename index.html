@@ -861,6 +861,8 @@ footer a:hover{color:var(--ink);}
   .forces span{opacity:1;}
 }
 </style>
+<!-- EmailJS : envoi d'emails directement depuis le navigateur, sans serveur -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
 <body class="no-js">
 
@@ -1665,6 +1667,53 @@ footer a:hover{color:var(--ink);}
 document.body.classList.remove('no-js');
 document.body.classList.add('js');
 
+/* ============================================================
+   CONFIGURATION EMAILJS — à remplir après création du compte
+   sur https://www.emailjs.com (voir guide fourni séparément).
+   Tant que EMAILJS_PUBLIC_KEY vaut "COLLEZ_ICI...", aucun email
+   réel n'est envoyé : tout continue de fonctionner en local
+   (stockage navigateur) sans erreur.
+   ============================================================ */
+const EMAILJS_PUBLIC_KEY        = "COLLEZ_ICI_VOTRE_PUBLIC_KEY";
+const EMAILJS_SERVICE_ID        = "COLLEZ_ICI_VOTRE_SERVICE_ID";
+const EMAILJS_TEMPLATE_ADMIN    = "COLLEZ_ICI_TEMPLATE_NOTIF_ADMIN";
+const EMAILJS_TEMPLATE_CLIENT   = "COLLEZ_ICI_TEMPLATE_ENVOI_CLIENT";
+const ADMIN_EMAIL               = "tonadresse@pro.com"; /* ton adresse mail pro */
+const PLAN_PDF_URL              = "https://TON-SITE.netlify.app/assets/plan-liberte.pdf"; /* lien public du PDF une fois déployé */
+
+const emailJsReady = EMAILJS_PUBLIC_KEY.indexOf('COLLEZ_ICI')===-1;
+if(emailJsReady && window.emailjs){ emailjs.init(EMAILJS_PUBLIC_KEY); }
+
+/* ============================================================
+   LIENS STRIPE — Payment Links créés dans le Dashboard Stripe.
+   Tant qu'un lien est vide (""), le bouton correspondant garde
+   le comportement de démonstration actuel (achat simulé local).
+   Dès qu'un lien est renseigné, le clic redirige vers Stripe.
+
+   IMPORTANT pour chaque Payment Link créé dans Stripe :
+   Réglages du lien > "After payment" > "Redirect customers to
+   your website" > cocher, puis coller l'URL de succès exacte
+   indiquée en commentaire à côté de chaque entrée ci-dessous
+   (remplacer TONSITE.netlify.app par ton vrai domaine).
+   ============================================================ */
+const STRIPE_LINKS = {
+  level: { /* succès attendu : ?unlock=level-N */
+    0:"", 1:"", 2:"", 3:"", 4:"", 5:"", 6:"", 7:"", 8:"", 9:"", 10:"", 11:""
+  },
+  tome: { /* succès attendu : ?unlock=tome-I-numerique, tome-I-papier, tome-Trilogie-numerique, ... */
+    "Tome I — Numérique":"", "Tome I — Papier":"",
+    "Tome II — Numérique":"", "Tome II — Papier":"",
+    "Tome III — Numérique":"", "Tome III — Papier":"",
+    "Trilogie — Numérique":"", "Trilogie — Papier":""
+  },
+  pack: { /* succès attendu : ?unlock=pack-decouverte ou ?unlock=pack-evolution */
+    decouverte:"", evolution:""
+  },
+  book: { /* succès attendu : ?unlock=book-numerique ou ?unlock=book-physique */
+    "Numérique":"", "Physique":""
+  }
+};
+
 /* Toast (remplace les alert() natifs) */
 let toastTimer;
 function showToast(text){
@@ -2174,6 +2223,8 @@ function openLevelModal(lvl){
       closeLevelModal();
       return;
     }
+    const stripeUrlLvl = STRIPE_LINKS.level[lvl.n];
+    if(stripeUrlLvl){ window.location.href = stripeUrlLvl; return; }
     if(!MEMBER_DATA.ownedLevels.includes(lvl.n)){
       MEMBER_DATA.ownedLevels.push(lvl.n);
       saveMemberData();
@@ -6970,6 +7021,8 @@ function renderQuizResult(){
 document.querySelectorAll('[data-buy]').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     const label = btn.dataset.buy;
+    const stripeUrlTome = STRIPE_LINKS.tome[label];
+    if(stripeUrlTome){ window.location.href = stripeUrlTome; return; }
     const isPapier = /Papier$/.test(label);
     const format = isPapier ? 'Papier' : 'Numérique';
     let addedTomes = [];
@@ -7004,6 +7057,8 @@ document.querySelectorAll('[data-pack]').forEach(btn=>{
     e.preventDefault();
     const pack = PACKS[btn.dataset.pack];
     if(!pack) return;
+    const stripeUrlPack = STRIPE_LINKS.pack[btn.dataset.pack];
+    if(stripeUrlPack){ window.location.href = stripeUrlPack; return; }
     let added = false;
     pack.levels.forEach(n=>{
       if(!MEMBER_DATA.ownedLevels.includes(n)){ MEMBER_DATA.ownedLevels.push(n); added = true; }
@@ -7028,6 +7083,8 @@ document.querySelectorAll('#formatChoice .format-opt').forEach(opt=>{
 
 /* Achat du livre "Système Invisible" : débloque la progression dans les niveaux */
 document.getElementById('buyLivreBtn').addEventListener('click', ()=>{
+  const stripeUrlBook = STRIPE_LINKS.book[selectedFormat];
+  if(stripeUrlBook){ window.location.href = stripeUrlBook; return; }
   MEMBER_DATA.ownedBook = true;
   /* La version Physique garde le meilleur des deux mondes : ebook immédiat + livre papier envoyé */
   if(selectedFormat === 'Physique' || MEMBER_DATA.bookFormat !== 'Physique'){
@@ -7041,6 +7098,62 @@ document.getElementById('buyLivreBtn').addEventListener('click', ()=>{
     : '<b>Livre débloqué :</b> Système Invisible (Numérique — ' + priceLabel + ')<br><span style="color:var(--muted);font-size:.8em;">Lien Stripe à venir · tu peux maintenant progresser dans les niveaux.</span>';
   showToast(msg);
 });
+
+/* ============================================================
+   RETOUR STRIPE APRÈS PAIEMENT RÉUSSI
+   Stripe redirige vers l'URL de succès configurée sur chaque
+   Payment Link (ex: https://TONSITE.netlify.app/?unlock=level-3).
+   Au chargement de la page, on lit ce paramètre et on débloque
+   le contenu correspondant dans l'espace membre local.
+   ============================================================ */
+function applyStripeUnlock(key){
+  if(key.startsWith('level-')){
+    const n = parseInt(key.slice(6), 10);
+    if(isNaN(n) || MEMBER_DATA.ownedLevels.includes(n)) return false;
+    MEMBER_DATA.ownedLevels.push(n);
+    return true;
+  }
+  if(key==='book-numerique' || key==='book-physique'){
+    const fmt = key==='book-physique' ? 'Physique' : 'Numérique';
+    const changed = !MEMBER_DATA.ownedBook || (fmt==='Physique' && MEMBER_DATA.bookFormat!=='Physique');
+    MEMBER_DATA.ownedBook = true;
+    if(fmt==='Physique' || MEMBER_DATA.bookFormat!=='Physique') MEMBER_DATA.bookFormat = fmt;
+    return changed;
+  }
+  if(key.startsWith('tome-')){
+    const m = key.match(/^tome-(I{1,3}|Trilogie)-(numerique|papier)$/);
+    if(!m) return false;
+    const format = m[2]==='papier' ? 'Papier' : 'Numérique';
+    const ids = m[1]==='Trilogie' ? ['I','II','III'] : [m[1]];
+    let changed = false;
+    ids.forEach(id=>{
+      if(!MEMBER_DATA.ownedTomes.includes(id)){ MEMBER_DATA.ownedTomes.push(id); changed = true; }
+      if(format==='Papier' || MEMBER_DATA.tomeFormats[id]!=='Papier'){ MEMBER_DATA.tomeFormats[id] = format; changed = true; }
+    });
+    return changed;
+  }
+  if(key.startsWith('pack-')){
+    const pack = PACKS[key.slice(5)];
+    if(!pack) return false;
+    let changed = false;
+    pack.levels.forEach(n=>{ if(!MEMBER_DATA.ownedLevels.includes(n)){ MEMBER_DATA.ownedLevels.push(n); changed = true; } });
+    if(!MEMBER_DATA.ownedBook){ MEMBER_DATA.ownedBook = true; changed = true; }
+    return changed;
+  }
+  return false;
+}
+(function handleStripeReturn(){
+  const params = new URLSearchParams(window.location.search);
+  const unlockKey = params.get('unlock');
+  if(!unlockKey) return;
+  if(applyStripeUnlock(unlockKey)){
+    saveMemberData();
+    renderDashboard();
+    showToast('<b>Achat confirmé, merci !</b><br><span style="color:var(--muted);font-size:.8em;">Ton contenu est débloqué dans ton espace membre.</span>');
+  }
+  /* Nettoie l'URL pour éviter un nouveau déblocage si la page est rechargée ou l'URL repartagée */
+  history.replaceState({}, '', window.location.pathname + window.location.hash);
+})();
 
 /* Formulaire "Plan de la Liberté" */
 const planForm = document.getElementById('planForm');
@@ -7061,9 +7174,25 @@ planForm.addEventListener('submit', e=>{
     leads.push({ name, phone, email, address, date: new Date().toISOString() });
     localStorage.setItem('systemeInvisible_leads', JSON.stringify(leads));
   }catch(err){}
-  document.getElementById('planNote').textContent = 'Merci ' + name + ' — ton Plan de la Liberté arrive à ' + email + ' (connexion email réelle à venir).';
+
+  if(emailJsReady && window.emailjs){
+    /* 1) notification à l'adresse pro avec les coordonnées complètes du lead */
+    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ADMIN, {
+      to_email: ADMIN_EMAIL, lead_name: name, lead_phone: phone,
+      lead_email: email, lead_address: address,
+      lead_date: new Date().toLocaleString('fr-FR')
+    }).catch(err=>console.error('EmailJS admin:', err));
+    /* 2) envoi du PDF (lien de téléchargement) au client */
+    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_CLIENT, {
+      to_email: email, client_name: name, pdf_link: PLAN_PDF_URL
+    }).catch(err=>console.error('EmailJS client:', err));
+    document.getElementById('planNote').textContent = 'Merci ' + name + ' — ton Plan de la Liberté vient de partir à ' + email + '.';
+    showToast('<b>Inscription enregistrée</b><br><span style="color:var(--muted);font-size:.8em;">Ton Plan de la Liberté arrive dans ta boîte mail.</span>');
+  } else {
+    document.getElementById('planNote').textContent = 'Merci ' + name + ' — ton Plan de la Liberté arrive à ' + email + ' (connexion email réelle à venir).';
+    showToast('<b>Inscription enregistrée</b><br><span style="color:var(--muted);font-size:.8em;">L\'envoi automatique par email sera branché plus tard.</span>');
+  }
   planForm.reset();
-  showToast('<b>Inscription enregistrée</b><br><span style="color:var(--muted);font-size:.8em;">L\'envoi automatique par email sera branché plus tard.</span>');
 });
 
 /* ===== AVIS CLIENTS ===== */
@@ -7071,37 +7200,66 @@ const AVIS_KEY = 'systemeInvisible_avis';
 const AVIS_LEVEL_ICON = ['⚫','🔴','🟠','🟡','🟢','🔵','🟣','🟤','🔶','🏆','🏛️','♾️'];
 
 const AVIS_SEED = [
-  {name:"Julien R.", level:0, rating:5, when:"il y a 4 jours", text:"J'ai ouvert le Niveau 0 sans trop y croire. Juste voir noir sur blanc mes dépendances m'a suffi à changer deux ou trois habitudes dès la première semaine. Simple et direct."},
-  {name:"Camille B.", level:0, rating:4, when:"il y a 6 jours", text:"Ça bouscule un peu au début, on réalise tout ce qu'on laisse filer sans y penser. Bonne mise en route, j'attends la suite avant de mettre 5 étoiles."},
-  {name:"Karim T.", level:0, rating:5, when:"il y a 1 semaine", text:"Le \"ménage intérieur\" du Niveau 0 m'a pris une soirée entière. J'ai identifié trois abonnements inutiles et une vraie dépendance à mes écrans. Point de départ solide."},
-  {name:"Élodie M.", level:0, rating:5, when:"il y a 2 semaines", text:"Je pensais déjà tout maîtriser côté finances. Le Niveau 0 m'a montré le contraire, avec bienveillance. Je recommence sur de meilleures bases."},
-  {name:"Damien F.", level:0, rating:4, when:"il y a 3 semaines", text:"Format clair, exercices concrets. J'ai encore du mal à tenir la discipline demandée mais c'est un bon déclic pour commencer."},
+  {name:"Julien R.", level:0, rating:5, date:"2026-07-08", text:"J'ai ouvert le Niveau 0 sans trop y croire. Juste voir noir sur blanc mes dépendances m'a suffi à changer deux ou trois habitudes dès la première semaine. Simple et direct."},
+  {name:"Camille B.", level:0, rating:4, date:"2026-07-06", text:"Ça bouscule un peu au début, on réalise tout ce qu'on laisse filer sans y penser. Bonne mise en route, j'attends la suite avant de mettre 5 étoiles."},
+  {name:"Karim T.", level:0, rating:5, date:"2026-07-05", text:"Le \"ménage intérieur\" du Niveau 0 m'a pris une soirée entière. J'ai identifié trois abonnements inutiles et une vraie dépendance à mes écrans. Point de départ solide."},
+  {name:"Élodie M.", level:0, rating:5, date:"2026-06-28", text:"Je pensais déjà tout maîtriser côté finances. Le Niveau 0 m'a montré le contraire, avec bienveillance. Je recommence sur de meilleures bases."},
+  {name:"Damien F.", level:0, rating:4, date:"2026-06-21", text:"Format clair, exercices concrets. J'ai encore du mal à tenir la discipline demandée mais c'est un bon déclic pour commencer."},
 
-  {name:"Sophie L.", level:2, rating:5, when:"il y a 3 semaines", text:"Niveau 2 en poche : mon budget est enfin clair, noir sur blanc, chaque mois. Je ne subis plus mes fins de mois, je les anticipe."},
-  {name:"Anthony G.", level:2, rating:5, when:"il y a 1 mois", text:"J'ai stabilisé mes dépenses grâce aux exercices du Niveau 2. Rien de magique, juste une méthode que j'ai enfin appliquée jusqu'au bout."},
-  {name:"Nadia B.", level:2, rating:4, when:"il y a 5 semaines", text:"Bonne suite logique après le Niveau 0. Ça demande de la rigueur mais les résultats sur mon équilibre mensuel sont déjà là."},
-  {name:"Vincent D.", level:2, rating:5, when:"il y a 6 semaines", text:"Le passage du chaos au contrôle, puis à la stabilité : je le vis vraiment niveau après niveau. Le Niveau 2 a posé des bases que je n'avais jamais eues."},
-  {name:"Laëtitia P.", level:2, rating:5, when:"il y a 2 mois", text:"Mes habitudes financières ont changé en quelques semaines. Mon conjoint a remarqué la différence avant même que je lui en parle."},
+  {name:"Sophie L.", level:2, rating:5, date:"2026-06-21", text:"Niveau 2 en poche : mon budget est enfin clair, noir sur blanc, chaque mois. Je ne subis plus mes fins de mois, je les anticipe."},
+  {name:"Anthony G.", level:2, rating:5, date:"2026-06-12", text:"J'ai stabilisé mes dépenses grâce aux exercices du Niveau 2. Rien de magique, juste une méthode que j'ai enfin appliquée jusqu'au bout."},
+  {name:"Nadia B.", level:2, rating:4, date:"2026-06-07", text:"Bonne suite logique après le Niveau 0. Ça demande de la rigueur mais les résultats sur mon équilibre mensuel sont déjà là."},
+  {name:"Vincent D.", level:2, rating:5, date:"2026-05-31", text:"Le passage du chaos au contrôle, puis à la stabilité : je le vis vraiment niveau après niveau. Le Niveau 2 a posé des bases que je n'avais jamais eues."},
+  {name:"Laëtitia P.", level:2, rating:5, date:"2026-05-12", text:"Mes habitudes financières ont changé en quelques semaines. Mon conjoint a remarqué la différence avant même que je lui en parle."},
 
-  {name:"Marc-Antoine V.", level:4, rating:5, when:"il y a 2 mois", text:"Niveau 4 : j'ai appris à construire mes premiers actifs grâce au site. Je commence enfin à me développer financièrement, avec des revenus qui ne dépendent plus uniquement de mon temps. Merci au créateur du site."},
-  {name:"Sarah K.", level:4, rating:5, when:"il y a 10 semaines", text:"Construire quelque chose qui rapporte même quand je ne travaille pas dessus : c'était abstrait avant le Niveau 4. Maintenant j'ai un premier actif, modeste mais réel."},
-  {name:"Yohann R.", level:4, rating:4, when:"il y a 3 mois", text:"On sent qu'on quitte la simple gestion pour passer à la construction. Ça demande plus de temps que les niveaux précédents mais les premiers résultats arrivent."},
-  {name:"Pauline C.", level:4, rating:5, when:"il y a 3 mois", text:"Le Niveau 4 a été un déclic : j'ai enfin un projet qui m'appartient et qui commence à générer un petit revenu à côté de mon salaire."},
+  {name:"Marc-Antoine V.", level:4, rating:5, date:"2026-05-12", text:"Niveau 4 : j'ai appris à construire mes premiers actifs grâce au site. Je commence enfin à me développer financièrement, avec des revenus qui ne dépendent plus uniquement de mon temps. Merci au créateur du site."},
+  {name:"Sarah K.", level:4, rating:5, date:"2026-05-03", text:"Construire quelque chose qui rapporte même quand je ne travaille pas dessus : c'était abstrait avant le Niveau 4. Maintenant j'ai un premier actif, modeste mais réel."},
+  {name:"Yohann R.", level:4, rating:4, date:"2026-04-12", text:"On sent qu'on quitte la simple gestion pour passer à la construction. Ça demande plus de temps que les niveaux précédents mais les premiers résultats arrivent."},
+  {name:"Pauline C.", level:4, rating:5, date:"2026-04-12", text:"Le Niveau 4 a été un déclic : j'ai enfin un projet qui m'appartient et qui commence à générer un petit revenu à côté de mon salaire."},
 
-  {name:"Frédéric N.", level:6, rating:5, when:"il y a 4 mois", text:"Niveau 6 : j'optimise maintenant ce que j'ai construit aux niveaux précédents. Moins d'efforts dispersés, plus de résultats sur ce qui fonctionne vraiment."},
-  {name:"Claire D.", level:6, rating:5, when:"il y a 5 mois", text:"Arrivée ici, je gère plusieurs sources de revenus et le Niveau 6 m'a aidée à couper ce qui freinait. Mon temps libre a doublé sans perte de revenus."},
-  {name:"Rachid B.", level:6, rating:4, when:"il y a 4 mois", text:"Bon niveau pour prendre du recul sur sa structure globale. J'aurais aimé un peu plus d'exemples chiffrés, mais la méthode fonctionne."},
-  {name:"Émilie T.", level:6, rating:5, when:"il y a 6 mois", text:"Depuis le Niveau 6, je pilote mes revenus comme un vrai tableau de bord. C'est la première fois que je me sens réellement aux commandes."},
+  {name:"Frédéric N.", level:6, rating:5, date:"2026-03-12", text:"Niveau 6 : j'optimise maintenant ce que j'ai construit aux niveaux précédents. Moins d'efforts dispersés, plus de résultats sur ce qui fonctionne vraiment."},
+  {name:"Claire D.", level:6, rating:5, date:"2026-02-12", text:"Arrivée ici, je gère plusieurs sources de revenus et le Niveau 6 m'a aidée à couper ce qui freinait. Mon temps libre a doublé sans perte de revenus."},
+  {name:"Rachid B.", level:6, rating:4, date:"2026-03-12", text:"Bon niveau pour prendre du recul sur sa structure globale. J'aurais aimé un peu plus d'exemples chiffrés, mais la méthode fonctionne."},
+  {name:"Émilie T.", level:6, rating:5, date:"2026-01-12", text:"Depuis le Niveau 6, je pilote mes revenus comme un vrai tableau de bord. C'est la première fois que je me sens réellement aux commandes."},
 
-  {name:"Grégoire L.", level:11, rating:5, when:"il y a 8 mois", text:"Niveau 11 atteint après un peu plus d'un an de parcours. Cinq sources de revenus actives aujourd'hui, et surtout une liberté de temps que je n'aurais jamais imaginée en commençant au Niveau 0. Ce site a changé ma trajectoire."},
-  {name:"Isabelle M.", level:11, rating:5, when:"il y a 1 an", text:"Je suis arrivée sceptique, je repars avec une structure complète et une vraie indépendance financière. Le chemin est long mais chaque niveau a sa raison d'être."},
+  {name:"Grégoire L.", level:11, rating:5, date:"2025-11-12", text:"Niveau 11 atteint après un peu plus d'un an de parcours. Cinq sources de revenus actives aujourd'hui, et surtout une liberté de temps que je n'aurais jamais imaginée en commençant au Niveau 0. Ce site a changé ma trajectoire."},
+  {name:"Isabelle M.", level:11, rating:5, date:"2025-07-12", text:"Je suis arrivée sceptique, je repars avec une structure complète et une vraie indépendance financière. Le chemin est long mais chaque niveau a sa raison d'être."},
 
-  {name:"Thomas B.", level:null, rating:5, when:"il y a 2 jours", text:"J'ai commencé par le livre Système Invisible avant de me lancer dans les niveaux. Une lecture qui remet les idées reçues en question, je le relis déjà une deuxième fois."},
-  {name:"Léa F.", level:null, rating:4, when:"il y a 5 jours", text:"Le livre pose vraiment bien le décor. Je n'ai pas encore acheté de niveau mais l'histoire de Thibault m'a donné envie d'aller plus loin."},
-  {name:"Mounir A.", level:null, rating:5, when:"il y a 1 semaine", text:"Acheté le livre par curiosité, terminé en trois soirées. Le mélange fiction et réflexion fonctionne très bien, ça donne vraiment envie de passer à l'action."},
-  {name:"Charlotte S.", level:null, rating:5, when:"il y a 3 jours", text:"Le Système Invisible m'a fait voir mes propres dépendances au quotidien sous un autre angle. Je passe au Niveau 0 dès ce week-end."},
-  {name:"David N.", level:null, rating:4, when:"il y a 10 jours", text:"Bonne surprise, je m'attendais à un simple livre de développement personnel et j'ai eu une vraie histoire prenante avec du fond derrière."},
+  {name:"Thomas B.", level:null, rating:5, date:"2026-07-10", text:"J'ai commencé par le livre Système Invisible avant de me lancer dans les niveaux. Une lecture qui remet les idées reçues en question, je le relis déjà une deuxième fois."},
+  {name:"Léa F.", level:null, rating:4, date:"2026-07-07", text:"Le livre pose vraiment bien le décor. Je n'ai pas encore acheté de niveau mais l'histoire de Thibault m'a donné envie d'aller plus loin."},
+  {name:"Mounir A.", level:null, rating:5, date:"2026-07-05", text:"Acheté le livre par curiosité, terminé en trois soirées. Le mélange fiction et réflexion fonctionne très bien, ça donne vraiment envie de passer à l'action."},
+  {name:"Charlotte S.", level:null, rating:5, date:"2026-07-09", text:"Le Système Invisible m'a fait voir mes propres dépendances au quotidien sous un autre angle. Je passe au Niveau 0 dès ce week-end."},
+  {name:"David N.", level:null, rating:4, date:"2026-07-02", text:"Bonne surprise, je m'attendais à un simple livre de développement personnel et j'ai eu une vraie histoire prenante avec du fond derrière."},
 ];
+
+/* Temps relatif dynamique — recalculé à chaque affichage à partir d'une vraie date */
+function timeAgo(dateInput){
+  const then = new Date(dateInput);
+  if(isNaN(then)) return 'Récemment';
+  const diffMs = Date.now() - then.getTime();
+  const diffMin = Math.floor(diffMs/60000);
+  const diffH = Math.floor(diffMin/60);
+  const diffD = Math.floor(diffH/24);
+  if(diffD < 1){
+    if(diffH < 1){
+      if(diffMin < 1) return "À l'instant";
+      return "il y a " + diffMin + (diffMin>1 ? " minutes" : " minute");
+    }
+    return "il y a " + diffH + (diffH>1 ? " heures" : " heure");
+  }
+  if(diffD === 1) return "il y a 1 jour";
+  if(diffD < 7) return "il y a " + diffD + " jours";
+  if(diffD < 30){
+    const w = Math.round(diffD/7);
+    return "il y a " + w + (w>1 ? " semaines" : " semaine");
+  }
+  if(diffD < 365){
+    const m = Math.round(diffD/30);
+    return "il y a " + m + " mois";
+  }
+  const y = Math.round(diffD/365);
+  return "il y a " + y + (y>1 ? " ans" : " an");
+}
 
 function avisEsc(s){
   return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -7162,7 +7320,7 @@ function renderAvis(){
       +   '</div>'
       + '</div>'
       + '<div class="avis-text">'+avisEsc(r.text)+'</div>'
-      + '<div class="avis-foot"><span class="avis-stars">'+avisStarsHTML(r.rating)+'</span><span>'+avisEsc(r.when||'Récemment')+'</span></div>'
+      + '<div class="avis-foot"><span class="avis-stars">'+avisStarsHTML(r.rating)+'</span><span>'+avisEsc(timeAgo(r.date))+'</span></div>'
       + '</div>';
   }).join('');
 
@@ -7229,7 +7387,7 @@ document.getElementById('avisForm').addEventListener('submit', e=>{
     text: text,
     level: levelRaw==='' ? null : Number(levelRaw),
     rating: avisPickedRating,
-    when: "À l'instant"
+    date: new Date().toISOString()
   };
   AVIS_USER.unshift(review);
   try{ localStorage.setItem(AVIS_KEY, JSON.stringify(AVIS_USER)); }catch(err){}
