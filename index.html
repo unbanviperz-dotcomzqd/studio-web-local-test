@@ -7255,10 +7255,38 @@ function applyStripeUnlock(key){
   }
   return false;
 }
-(function handleStripeReturn(){
+(async function handleStripeReturn(){
   const params = new URLSearchParams(window.location.search);
   const unlockKey = params.get('unlock');
+  const sessionId = params.get('session_id');
+
+  /* Nettoie l'URL tout de suite, avant même la vérification, pour éviter
+     qu'un rechargement de page ne redéclenche le traitement */
+  if(unlockKey){ history.replaceState({}, '', window.location.pathname + window.location.hash); }
   if(!unlockKey) return;
+
+  /* Sans session_id fourni par Stripe (donc quelqu'un a tapé l'URL à la main),
+     on ne débloque strictement rien. */
+  if(!sessionId){ console.warn('Tentative de déblocage sans session Stripe valide.'); return; }
+
+  /* Vérification serveur : on redemande à Stripe lui-même si CETTE session a
+     bien été payée et correspond bien à CE produit. Impossible à falsifier
+     depuis le navigateur, aucune base de données nécessaire pour ça. */
+  let verified = false;
+  try{
+    const res = await fetch('/.netlify/functions/verify-purchase', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ sessionId, productKey: unlockKey })
+    });
+    const data = await res.json();
+    verified = !!data.valid;
+  }catch(err){
+    console.error('verify-purchase:', err);
+    verified = false; /* en cas de doute, on NE débloque PAS */
+  }
+  if(!verified){ console.warn('Paiement non confirmé par Stripe pour', unlockKey); return; }
+
   if(applyStripeUnlock(unlockKey)){
     saveMemberData();
     renderDashboard();
@@ -7269,8 +7297,6 @@ function applyStripeUnlock(key){
       showToast('<b>Achat confirmé, merci !</b><br><span style="color:var(--muted);font-size:.8em;">Ton contenu est débloqué dans ton espace membre.</span>');
     }
   }
-  /* Nettoie l'URL pour éviter un nouveau déblocage si la page est rechargée ou l'URL repartagée */
-  history.replaceState({}, '', window.location.pathname + window.location.hash);
 })();
 
 /* Formulaire "Plan de la Liberté" */
