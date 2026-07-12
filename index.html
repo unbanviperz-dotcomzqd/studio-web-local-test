@@ -865,6 +865,8 @@ footer a:hover{color:var(--ink);}
 </style>
 <!-- EmailJS : envoi d'emails directement depuis le navigateur, sans serveur -->
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<!-- Supabase : base de données partagée, pour que les avis soient visibles par tous les visiteurs -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body class="no-js">
 
@@ -1676,16 +1678,29 @@ document.body.classList.add('js');
    réel n'est envoyé : tout continue de fonctionner en local
    (stockage navigateur) sans erreur.
    ============================================================ */
-const EMAILJS_PUBLIC_KEY        = "COLLEZ_ICI_VOTRE_PUBLIC_KEY";
-const EMAILJS_SERVICE_ID        = "COLLEZ_ICI_VOTRE_SERVICE_ID";
-const EMAILJS_TEMPLATE_ADMIN    = "COLLEZ_ICI_TEMPLATE_NOTIF_ADMIN";
+const EMAILJS_PUBLIC_KEY        = "4UgFFKk0nWewA0T2q";
+const EMAILJS_SERVICE_ID        = "service_s718q1q";
+const EMAILJS_TEMPLATE_ADMIN    = "template_83m30d9";
 const EMAILJS_TEMPLATE_CLIENT   = "COLLEZ_ICI_TEMPLATE_ENVOI_CLIENT";
-const ADMIN_EMAIL               = "tonadresse@pro.com"; /* ton adresse mail pro */
+const ADMIN_EMAIL               = "unbanviperz@gmail.com"; /* ton adresse mail pro */
 const PLAN_PDF_URL              = "https://TON-SITE.netlify.app/assets/plan-liberte.pdf"; /* lien inclus dans l'email — à remplir avec l'URL réelle une fois déployé sur Netlify */
 const PLAN_PDF_PATH             = "assets/plan-liberte.pdf"; /* chemin relatif utilisé pour le téléchargement direct sur le site — fonctionne déjà en local */
 
 const emailJsReady = EMAILJS_PUBLIC_KEY.indexOf('COLLEZ_ICI')===-1;
 if(emailJsReady && window.emailjs){ emailjs.init(EMAILJS_PUBLIC_KEY); }
+
+/* ============================================================
+   SUPABASE — base de données partagée pour les avis clients.
+   Tant que SUPABASE_URL vaut "COLLEZ_ICI...", les avis restent
+   uniquement stockés dans le navigateur (comme aujourd'hui).
+   Une fois renseigné, TOUS les visiteurs voient les mêmes avis,
+   dans le même ordre, en temps réel.
+   Clé "anon public" uniquement ici — jamais la clé "service_role".
+   ============================================================ */
+const SUPABASE_URL      = "COLLEZ_ICI_URL_SUPABASE";
+const SUPABASE_ANON_KEY = "COLLEZ_ICI_CLE_ANON_PUBLIC";
+const supabaseReady = SUPABASE_URL.indexOf('COLLEZ_ICI')===-1 && window.supabase;
+const sbClient = supabaseReady ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
 /* ============================================================
    LIENS STRIPE — Payment Links créés dans le Dashboard Stripe.
@@ -7220,20 +7235,23 @@ planForm.addEventListener('submit', e=>{
   const downloaded = triggerPdfDownload();
 
   if(emailJsReady && window.emailjs){
-    /* 1) notification à l'adresse pro avec les coordonnées complètes du lead */
+    /* notification à l'adresse pro avec les coordonnées complètes du lead */
     emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ADMIN, {
       to_email: ADMIN_EMAIL, lead_name: name, lead_phone: phone,
       lead_email: email, lead_address: address,
       lead_date: new Date().toLocaleString('fr-FR')
     }).catch(err=>console.error('EmailJS admin:', err));
-    /* 2) envoi du PDF (lien de téléchargement, en secours si le téléchargement direct a été bloqué) au client */
-    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_CLIENT, {
-      to_email: email, client_name: name, pdf_link: PLAN_PDF_URL
-    }).catch(err=>console.error('EmailJS client:', err));
+    /* email client optionnel : seulement si un vrai template client a été configuré */
+    const clientTemplateReady = EMAILJS_TEMPLATE_CLIENT.indexOf('COLLEZ_ICI')===-1;
+    if(clientTemplateReady){
+      emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_CLIENT, {
+        to_email: email, client_name: name, pdf_link: PLAN_PDF_URL
+      }).catch(err=>console.error('EmailJS client:', err));
+    }
     document.getElementById('planNote').textContent = downloaded
-      ? 'Merci ' + name + ' — ton téléchargement a démarré, et une copie part aussi à ' + email + '.'
-      : 'Merci ' + name + ' — ton Plan de la Liberté vient de partir à ' + email + '.';
-    showToast('<b>Inscription enregistrée</b><br><span style="color:var(--muted);font-size:.8em;">' + (downloaded ? 'Téléchargement lancé + copie envoyée par email.' : 'Ton Plan de la Liberté arrive dans ta boîte mail.') + '</span>');
+      ? 'Merci ' + name + ' — ton téléchargement a démarré.'
+      : 'Merci ' + name + ' — ton Plan de la Liberté arrive à ' + email + '.';
+    showToast('<b>Inscription enregistrée</b><br><span style="color:var(--muted);font-size:.8em;">' + (downloaded ? 'Téléchargement lancé.' : 'Ton Plan de la Liberté arrive dans ta boîte mail.') + '</span>');
   } else {
     document.getElementById('planNote').textContent = downloaded
       ? 'Merci ' + name + ' — ton téléchargement a démarré (connexion email réelle à venir).'
@@ -7330,6 +7348,9 @@ function avisInitials(name){
 let AVIS_USER = [];
 try{ AVIS_USER = JSON.parse(localStorage.getItem(AVIS_KEY) || '[]'); }catch(e){ AVIS_USER = []; }
 
+/* null = pas encore chargé depuis Supabase (on utilise alors AVIS_USER + AVIS_SEED en local) */
+let AVIS_REMOTE = null;
+
 const AVIS_INITIAL_VISIBLE = 6;
 const AVIS_STEP = 3;
 let avisVisibleCount = AVIS_INITIAL_VISIBLE;
@@ -7345,7 +7366,7 @@ function avisSortLevel(r){
 }
 
 function avisSortedList(){
-  const all = [...AVIS_USER, ...AVIS_SEED];
+  const all = AVIS_REMOTE !== null ? AVIS_REMOTE : [...AVIS_USER, ...AVIS_SEED];
   if(avisSortMode==='level-desc'){
     return all.slice().sort((a,b)=> avisSortLevel(b)-avisSortLevel(a));
   }
@@ -7353,6 +7374,17 @@ function avisSortedList(){
     return all.slice().sort((a,b)=> avisSortLevel(a)-avisSortLevel(b));
   }
   return all; /* défaut : ordre d'origine (plus récents en tête côté avis utilisateurs) */
+}
+
+/* Charge les avis partagés depuis Supabase (si configuré) — visible par TOUS les visiteurs */
+async function loadAvisFromSupabase(){
+  if(!supabaseReady) return;
+  try{
+    const { data, error } = await sbClient.from('avis').select('*').order('date', { ascending:false });
+    if(error){ console.error('Supabase avis:', error); return; }
+    AVIS_REMOTE = data || [];
+    renderAvis();
+  }catch(err){ console.error('Supabase avis:', err); }
 }
 
 function renderAvis(){
@@ -7381,6 +7413,7 @@ function renderAvis(){
   avisLessBtn.style.display = avisVisibleCount>AVIS_INITIAL_VISIBLE ? 'inline-flex' : 'none';
 }
 renderAvis();
+loadAvisFromSupabase();
 
 avisMoreBtn.addEventListener('click', ()=>{
   avisVisibleCount += AVIS_STEP;
@@ -7429,7 +7462,7 @@ document.getElementById('avisOpenBtn').addEventListener('click', openAvisModal);
 document.getElementById('avisModal').addEventListener('click', e=>{ if(e.target.id==='avisModal') closeAvisModal(); });
 
 /* Soumission du formulaire d'avis */
-document.getElementById('avisForm').addEventListener('submit', e=>{
+document.getElementById('avisForm').addEventListener('submit', async e=>{
   e.preventDefault();
   const name = document.getElementById('avisFormName').value.trim();
   const text = document.getElementById('avisFormText').value.trim();
@@ -7442,9 +7475,21 @@ document.getElementById('avisForm').addEventListener('submit', e=>{
     rating: avisPickedRating,
     date: new Date().toISOString()
   };
-  AVIS_USER.unshift(review);
-  try{ localStorage.setItem(AVIS_KEY, JSON.stringify(AVIS_USER)); }catch(err){}
-  renderAvis();
+
+  if(supabaseReady){
+    const { error } = await sbClient.from('avis').insert(review);
+    if(error){
+      console.error('Supabase avis insert:', error);
+      showToast('Erreur lors de l\'envoi de ton avis, réessaie plus tard.');
+      return;
+    }
+    await loadAvisFromSupabase(); /* recharge la liste partagée, visible par tous */
+  } else {
+    AVIS_USER.unshift(review);
+    try{ localStorage.setItem(AVIS_KEY, JSON.stringify(AVIS_USER)); }catch(err){}
+    renderAvis();
+  }
+
   document.getElementById('avisForm').reset();
   avisPickedRating = 5; avisPaintPicker(5);
   closeAvisModal();
