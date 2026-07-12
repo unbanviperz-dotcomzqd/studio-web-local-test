@@ -27,7 +27,17 @@ exports.handler = async (event) => {
       return { statusCode: 200, body: JSON.stringify({ valid: false, reason: 'already_redeemed' }) };
     }
     await store.set(sessionId, new Date().toISOString());
+/* Si c'est le livre qui vient d'être payé, on retient l'email comme "propriétaire du livre" */
+    if (productKey.startsWith('book-')) {
+      const email = (session.customer_details && session.customer_details.email) || session.customer_email;
+      if (email) {
+        const ownersStore = getStore('book-owners');
+        await ownersStore.set(email.toLowerCase(), new Date().toISOString());
+      }
+    }
 
+    return { statusCode: 200, body: JSON.stringify({ valid: true }) };
+    
     return { statusCode: 200, body: JSON.stringify({ valid: true }) };
   } catch (err) {
     console.error('verify-purchase error:', err);

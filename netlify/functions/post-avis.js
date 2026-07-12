@@ -5,10 +5,18 @@ exports.handler = async (event) => {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
   try {
-    const { name, text, level, rating } = JSON.parse(event.body || '{}');
-    if (!name || !text || !rating) {
-      return { statusCode: 400, body: JSON.stringify({ error: 'name, text et rating sont requis.' }) };
+    const { name, text, level, rating, email } = JSON.parse(event.body || '{}');
+    if (!name || !text || !rating || !email) {
+      return { statusCode: 400, body: JSON.stringify({ error: 'name, text, rating et email sont requis.' }) };
     }
+
+    /* Vérifie que cet email correspond bien à un achat réel du livre */
+    const ownersStore = getStore('book-owners');
+    const owns = await ownersStore.get(String(email).toLowerCase());
+    if (!owns) {
+      return { statusCode: 403, body: JSON.stringify({ error: 'not_verified_owner' }) };
+    }
+
     const store = getStore('avis-data');
     const raw = await store.get('avis-list');
     const avis = raw ? JSON.parse(raw) : [];
@@ -18,6 +26,7 @@ exports.handler = async (event) => {
       level: (level===null || level===undefined || level==='') ? null : Number(level),
       rating: Math.max(1, Math.min(5, Number(rating)||5)),
       date: new Date().toISOString()
+      /* l'email n'est jamais stocké dans l'avis public, seulement utilisé pour vérifier */
     };
     avis.unshift(newAvis);
     await store.set('avis-list', JSON.stringify(avis));

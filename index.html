@@ -7571,6 +7571,11 @@ avisStarPicker.querySelectorAll('span').forEach(s=>{
 
 /* Ouverture / fermeture modale */
 function openAvisModal(){
+  if(!MEMBER_DATA.ownedBook){
+    showToast('<b>Réservé aux lecteurs</b><br><span style="color:var(--muted);font-size:.8em;">Seules les personnes ayant acheté "Système Invisible" peuvent laisser un avis.</span>');
+    document.getElementById('livre').scrollIntoView({behavior:'smooth'});
+    return;
+  }
   const nameField = document.getElementById('avisFormName');
   if(nameField && !nameField.value && MEMBER_DATA.name){ nameField.value = MEMBER_DATA.name; }
   document.getElementById('avisModal').classList.add('open');
@@ -7586,12 +7591,15 @@ document.getElementById('avisForm').addEventListener('submit', async e=>{
   const text = document.getElementById('avisFormText').value.trim();
   const levelRaw = avisFormLevel.value;
   if(!name || !text){ showToast('Merci de renseigner ton prénom et ton avis.'); return; }
+  const email = ensureContactField('email', 'Ton email (celui utilisé à l\'achat du livre), pour vérifier ton avis :', v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v));
+  if(!email){ showToast('Email requis pour publier un avis.'); return; }
   const review = {
     name: name,
     text: text,
     level: levelRaw==='' ? null : Number(levelRaw),
     rating: avisPickedRating,
-    date: new Date().toISOString()
+    date: new Date().toISOString(),
+    email: email
   };
 
   try{
@@ -7600,6 +7608,10 @@ document.getElementById('avisForm').addEventListener('submit', async e=>{
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify(review)
     });
+    if(res.status === 403){
+      showToast('<b>Avis non publié</b><br><span style="color:var(--muted);font-size:.8em;">Cet email ne correspond à aucun achat de "Système Invisible".</span>');
+      return;
+    }
     if(!res.ok) throw new Error('HTTP '+res.status);
     await loadAvisFromServer(); /* recharge la liste partagée, visible par tous */
   }catch(err){
