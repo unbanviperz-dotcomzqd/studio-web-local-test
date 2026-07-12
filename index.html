@@ -1703,34 +1703,116 @@ const supabaseReady = SUPABASE_URL.indexOf('COLLEZ_ICI')===-1 && window.supabase
 const sbClient = supabaseReady ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
 /* ============================================================
-   LIENS STRIPE — Payment Links créés dans le Dashboard Stripe.
-   Tant qu'un lien est vide (""), le bouton correspondant garde
-   le comportement de démonstration actuel (achat simulé local).
-   Dès qu'un lien est renseigné, le clic redirige vers Stripe.
-
-   IMPORTANT pour chaque Payment Link créé dans Stripe :
-   Réglages du lien > "After payment" > "Redirect customers to
-   your website" > cocher, puis coller l'URL de succès exacte
-   indiquée en commentaire à côté de chaque entrée ci-dessous
-   (remplacer TONSITE.netlify.app par ton vrai domaine).
+   PAIEMENT STRIPE DYNAMIQUE — via la fonction Netlify
+   create-checkout-session.js (utilise ta clé secrète, jamais
+   exposée ici). Le prix est extrait automatiquement de celui
+   déjà affiché sur le site pour chaque produit — aucun produit
+   à créer à la main dans le Dashboard Stripe.
+   Numérique -> déblocage immédiat dans "Mes produits".
+   Physique -> déblocage immédiat de l'ebook + email admin avec
+   nom, téléphone, adresse du client pour l'expédition.
    ============================================================ */
-const STRIPE_LINKS = {
-  level: { /* succès attendu : ?unlock=level-N */
-    0:"", 1:"", 2:"", 3:"", 4:"", 5:"", 6:"", 7:"", 8:"", 9:"", 10:"", 11:""
-  },
-  tome: { /* succès attendu : ?unlock=tome-I-numerique, tome-I-papier, tome-Trilogie-numerique, ... */
-    "Tome I — Numérique":"", "Tome I — Papier":"",
-    "Tome II — Numérique":"", "Tome II — Papier":"",
-    "Tome III — Numérique":"", "Tome III — Papier":"",
-    "Trilogie — Numérique":"", "Trilogie — Papier":""
-  },
-  pack: { /* succès attendu : ?unlock=pack-decouverte ou ?unlock=pack-evolution */
-    decouverte:"", evolution:""
-  },
-  book: { /* succès attendu : ?unlock=book-numerique ou ?unlock=book-physique */
-    "Numérique":"", "Physique":""
+
+/* Récupère uniquement le texte "libre" d'un élément (ignore les
+   enfants <s>...</s> barrés et les badges "Promo") — sert à lire
+   le prix final affiché, pas l'ancien prix barré. */
+function extractDirectText(el){
+  if(!el) return '';
+  return Array.from(el.childNodes).filter(n=>n.nodeType===3).map(n=>n.textContent).join('').trim();
+}
+/* Convertit "27,99 €" / "49 €" / "45,99€" en centimes (2799 / 4900 / 4599) */
+function parsePriceToCents(str){
+  if(!str) return 0;
+  const m = String(str).match(/(\d+)(?:[,.](\d{1,2}))?/);
+  if(!m) return 0;
+  const decPart = (m[2]||'').padEnd(2,'0').slice(0,2);
+  return parseInt(m[1]+decPart, 10);
+}
+/* Demande une info de contact une seule fois, puis la réutilise (stockée dans MEMBER_DATA) */
+function ensureContactField(key, promptLabel, validator){
+  if(MEMBER_DATA[key] && (!validator || validator(MEMBER_DATA[key]))) return MEMBER_DATA[key];
+  const val = window.prompt(promptLabel);
+  if(!val) return null;
+  const trimmed = val.trim();
+  if(validator && !validator(trimmed)) return null;
+  MEMBER_DATA[key] = trimmed;
+  saveMemberData();
+  return trimmed;
+}
+
+/* Lance un vrai paiement Stripe pour le produit donné (prix en centimes).
+   Si la fonction Netlify n'est pas encore déployée/joignable, retombe
+   sur fallbackFn() (comportement de démonstration local), pour que le
+   site reste testable même avant la mise en ligne complète. */
+async function startStripeCheckout(productKey, productName, amountCents, isPhysical, fallbackFn){
+  if(!amountCents){ if(fallbackFn) fallbackFn(); return; }
+
+  const email = ensureContactField('email', 'Ton email, pour recevoir la confirmation de commande :', v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v));
+  if(!email){ showToast('Email requis pour continuer, achat annulé.'); return; }
+
+  if(isPhysical){
+    const phone = ensureContactField('phone', 'Ton numéro de téléphone (pour la livraison) :', v=>v.replace(/[^\d]/g,'').length>=8);
+    if(!phone){ showToast('Numéro de téléphone requis pour un envoi physique, achat annulé.'); return; }
+    const address = ensureContactField('address', 'Ton adresse postale complète (rue, code postal, ville) :', v=>v.length>4);
+    if(!address){ showToast('Adresse requise pour un envoi physique, achat annulé.'); return; }
   }
-};
+
+  try{
+    const res = await fetch('/.netlify/functions/create-checkout-session', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ productKey, productName, amountCents, customerEmail: email })
+    });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    if(data.url){ window.location.href = data.url; return; }
+    throw new Error('Pas d\'URL renvoyée par le serveur');
+  }catch(err){
+    console.error('Stripe checkout:', err);
+    if(fallbackFn){
+      showToast('<b>Paiement Stripe pas encore actif</b><br><span style="color:var(--muted);font-size:.8em;">Achat simulé localement en attendant.</span>');
+      fallbackFn();
+    } else {
+      showToast('Erreur lors de la création du paiement, réessaie plus tard.');
+    }
+  }
+}
+
+/* Nom lisible du produit à partir de sa clé d'unlock (ex: "level-3", "book-physique") */
+function productLabelFromUnlockKey(key){
+  if(key.startsWith('level-')){
+    const n = parseInt(key.slice(6),10);
+    const lvl = LEVELS.find(l=>l.n===n);
+    return 'Niveau ' + n + (lvl ? (' — '+lvl.name) : '');
+  }
+  if(key==='book-numerique') return 'Système Invisible — Livre (Numérique)';
+  if(key==='book-physique') return 'Système Invisible — Livre (Physique)';
+  const tomeMatch = key.match(/^tome-(I{1,3}|Trilogie)-(numerique|papier)$/);
+  if(tomeMatch){
+    const fmt = tomeMatch[2]==='papier' ? 'Papier' : 'Numérique';
+    const id = tomeMatch[1]==='Trilogie' ? 'Trilogie' : ('Tome '+tomeMatch[1]);
+    return id + ' — ' + fmt;
+  }
+  if(key==='pack-decouverte') return 'Pack Découverte';
+  if(key==='pack-evolution') return 'Pack Évolution';
+  return key;
+}
+function isPhysicalUnlockKey(key){
+  return key==='book-physique' || /-papier$/.test(key);
+}
+/* Email admin dédié aux commandes physiques : nom, téléphone, adresse + produit à expédier */
+function notifyAdminPhysicalOrder(unlockKey){
+  if(!(emailJsReady && window.emailjs)) return;
+  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ADMIN, {
+    to_email: ADMIN_EMAIL,
+    lead_name: MEMBER_DATA.name || '(non renseigné)',
+    lead_phone: MEMBER_DATA.phone || '(non renseigné)',
+    lead_email: MEMBER_DATA.email || '(non renseigné)',
+    lead_address: MEMBER_DATA.address || '(non renseignée)',
+    lead_date: new Date().toLocaleString('fr-FR'),
+    lead_product: 'Produit à livrer — ' + productLabelFromUnlockKey(unlockKey)
+  }).catch(err=>console.error('EmailJS commande physique:', err));
+}
 
 /* Toast (remplace les alert() natifs) */
 let toastTimer;
@@ -1795,7 +1877,7 @@ document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
 /* ===== ESPACE MEMBRE : dashboard piloté par les produits RÉELLEMENT possédés ===== */
 const STORAGE_KEY = 'systemeInvisible_member';
 function loadMemberData(){
-  const defaults = { name: null, ownedLevels: [], ownedTomes: [], ownedBook: false, bookFormat: null, tomeFormats: {}, diagLevel: null };
+  const defaults = { name: null, email: null, phone: null, address: null, ownedLevels: [], ownedTomes: [], ownedBook: false, bookFormat: null, tomeFormats: {}, diagLevel: null };
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
     if(raw) return Object.assign(defaults, JSON.parse(raw));
@@ -2245,15 +2327,17 @@ function openLevelModal(lvl){
       closeLevelModal();
       return;
     }
-    const stripeUrlLvl = STRIPE_LINKS.level[lvl.n];
-    if(stripeUrlLvl){ window.location.href = stripeUrlLvl; return; }
-    if(!MEMBER_DATA.ownedLevels.includes(lvl.n)){
-      MEMBER_DATA.ownedLevels.push(lvl.n);
-      saveMemberData();
-      renderDashboard();
-    }
-    showToast('<b>Achat simulé :</b> Niveau ' + lvl.n + ' — ' + lvl.name + '<br><span style="color:var(--muted);font-size:.8em;">Lien Stripe à venir · ton espace membre local est mis à jour.</span>');
+    const amountCentsLvl = parsePriceToCents(lvl.price);
+    const productNameLvl = 'Niveau ' + lvl.n + ' — ' + lvl.name;
     closeLevelModal();
+    startStripeCheckout('level-'+lvl.n, productNameLvl, amountCentsLvl, false, ()=>{
+      if(!MEMBER_DATA.ownedLevels.includes(lvl.n)){
+        MEMBER_DATA.ownedLevels.push(lvl.n);
+        saveMemberData();
+        renderDashboard();
+      }
+      showToast('<b>Achat simulé :</b> ' + productNameLvl + '<br><span style="color:var(--muted);font-size:.8em;">Fonction de paiement pas encore active · espace membre local mis à jour.</span>');
+    });
   };
   levelModal.classList.add('open');
   document.body.style.overflow='hidden';
@@ -7043,8 +7127,6 @@ function renderQuizResult(){
 document.querySelectorAll('[data-buy]').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     const label = btn.dataset.buy;
-    const stripeUrlTome = STRIPE_LINKS.tome[label];
-    if(stripeUrlTome){ window.location.href = stripeUrlTome; return; }
     const isPapier = /Papier$/.test(label);
     const format = isPapier ? 'Papier' : 'Numérique';
     let addedTomes = [];
@@ -7054,18 +7136,21 @@ document.querySelectorAll('[data-buy]').forEach(btn=>{
       const match = label.match(/Tome (I{1,3})/);
       if(match) addedTomes = [match[1]];
     }
-    addedTomes.forEach(id=>{
-      if(!MEMBER_DATA.ownedTomes.includes(id)) MEMBER_DATA.ownedTomes.push(id);
-      /* Le format Papier inclut aussi l'ebook en attendant réception : on garde toujours le meilleur format acquis */
-      if(format === 'Papier' || MEMBER_DATA.tomeFormats[id] !== 'Papier'){
-        MEMBER_DATA.tomeFormats[id] = format;
-      }
+    const idKey = label.startsWith('Trilogie') ? 'Trilogie' : (addedTomes[0]||'');
+    const priceEl = btn.closest('.tb-row, .sb-block');
+    const priceNode = priceEl ? priceEl.querySelector('.tb-price, .sb-p') : null;
+    const amountCents = parsePriceToCents(extractDirectText(priceNode));
+    startStripeCheckout('tome-'+idKey+'-'+(isPapier?'papier':'numerique'), label, amountCents, isPapier, ()=>{
+      addedTomes.forEach(id=>{
+        if(!MEMBER_DATA.ownedTomes.includes(id)) MEMBER_DATA.ownedTomes.push(id);
+        /* Le format Papier inclut aussi l'ebook en attendant réception : on garde toujours le meilleur format acquis */
+        if(format === 'Papier' || MEMBER_DATA.tomeFormats[id] !== 'Papier'){
+          MEMBER_DATA.tomeFormats[id] = format;
+        }
+      });
+      if(addedTomes.length){ saveMemberData(); renderDashboard(); }
+      showToast('<b>Achat simulé :</b> ' + label + '<br><span style="color:var(--muted);font-size:.8em;">Fonction de paiement pas encore active · espace membre local mis à jour.</span>');
     });
-    if(addedTomes.length){ saveMemberData(); renderDashboard(); }
-    const msg = isPapier
-      ? '<b>Achat simulé :</b> ' + label + '<br><span style="color:var(--muted);font-size:.8em;">Le temps que tu reçoives ton exemplaire papier, la version ebook est disponible dès maintenant dans ton espace membre. Lien Stripe à venir.</span>'
-      : '<b>Achat simulé :</b> ' + label + '<br><span style="color:var(--muted);font-size:.8em;">Lien Stripe à venir · ton espace membre local est mis à jour.</span>';
-    showToast(msg);
   });
 });
 
@@ -7079,16 +7164,19 @@ document.querySelectorAll('[data-pack]').forEach(btn=>{
     e.preventDefault();
     const pack = PACKS[btn.dataset.pack];
     if(!pack) return;
-    const stripeUrlPack = STRIPE_LINKS.pack[btn.dataset.pack];
-    if(stripeUrlPack){ window.location.href = stripeUrlPack; return; }
-    let added = false;
-    pack.levels.forEach(n=>{
-      if(!MEMBER_DATA.ownedLevels.includes(n)){ MEMBER_DATA.ownedLevels.push(n); added = true; }
+    const priceEl = btn.closest('.pack');
+    const priceNode = priceEl ? priceEl.querySelector('.p-price') : null;
+    const amountCents = parsePriceToCents(priceNode ? priceNode.textContent : '');
+    startStripeCheckout('pack-'+btn.dataset.pack, pack.label, amountCents, false, ()=>{
+      let added = false;
+      pack.levels.forEach(n=>{
+        if(!MEMBER_DATA.ownedLevels.includes(n)){ MEMBER_DATA.ownedLevels.push(n); added = true; }
+      });
+      if(!MEMBER_DATA.ownedBook){ MEMBER_DATA.ownedBook = true; added = true; }
+      if(added){ saveMemberData(); renderDashboard(); }
+      showToast('<b>Achat simulé :</b> ' + pack.label + '<br><span style="color:var(--muted);font-size:.8em;">Fonction de paiement pas encore active · niveaux et livre débloqués localement.</span>');
+      document.getElementById('espace').scrollIntoView({behavior:'smooth'});
     });
-    if(!MEMBER_DATA.ownedBook){ MEMBER_DATA.ownedBook = true; added = true; }
-    if(added){ saveMemberData(); renderDashboard(); }
-    showToast('<b>Achat simulé :</b> ' + pack.label + '<br><span style="color:var(--muted);font-size:.8em;">Lien Stripe à venir · niveaux et livre débloqués dans ton espace membre local.</span>');
-    document.getElementById('espace').scrollIntoView({behavior:'smooth'});
   });
 });
 
@@ -7105,20 +7193,23 @@ document.querySelectorAll('#formatChoice .format-opt').forEach(opt=>{
 
 /* Achat du livre "Système Invisible" : débloque la progression dans les niveaux */
 document.getElementById('buyLivreBtn').addEventListener('click', ()=>{
-  const stripeUrlBook = STRIPE_LINKS.book[selectedFormat];
-  if(stripeUrlBook){ window.location.href = stripeUrlBook; return; }
-  MEMBER_DATA.ownedBook = true;
-  /* La version Physique garde le meilleur des deux mondes : ebook immédiat + livre papier envoyé */
-  if(selectedFormat === 'Physique' || MEMBER_DATA.bookFormat !== 'Physique'){
-    MEMBER_DATA.bookFormat = selectedFormat;
-  }
-  saveMemberData();
-  renderDashboard();
   const priceLabel = document.querySelector('#formatChoice .format-opt.active .fo-price').textContent;
-  const msg = selectedFormat === 'Physique'
-    ? '<b>Livre débloqué :</b> Système Invisible (Physique — ' + priceLabel + ')<br><span style="color:var(--muted);font-size:.8em;">Le temps que tu reçoives ton livre en physique, la version ebook est disponible dès maintenant dans ton espace membre. Lien Stripe à venir.</span>'
-    : '<b>Livre débloqué :</b> Système Invisible (Numérique — ' + priceLabel + ')<br><span style="color:var(--muted);font-size:.8em;">Lien Stripe à venir · tu peux maintenant progresser dans les niveaux.</span>';
-  showToast(msg);
+  const amountCents = parsePriceToCents(priceLabel);
+  const isPhysicalBook = selectedFormat === 'Physique';
+  const productName = 'Système Invisible — Livre (' + selectedFormat + ')';
+  startStripeCheckout('book-'+(isPhysicalBook?'physique':'numerique'), productName, amountCents, isPhysicalBook, ()=>{
+    MEMBER_DATA.ownedBook = true;
+    /* La version Physique garde le meilleur des deux mondes : ebook immédiat + livre papier envoyé */
+    if(selectedFormat === 'Physique' || MEMBER_DATA.bookFormat !== 'Physique'){
+      MEMBER_DATA.bookFormat = selectedFormat;
+    }
+    saveMemberData();
+    renderDashboard();
+    const msg = isPhysicalBook
+      ? '<b>Livre débloqué :</b> ' + productName + '<br><span style="color:var(--muted);font-size:.8em;">Fonction de paiement pas encore active · ebook déjà disponible dans ton espace membre.</span>'
+      : '<b>Livre débloqué :</b> ' + productName + '<br><span style="color:var(--muted);font-size:.8em;">Fonction de paiement pas encore active · tu peux progresser dans les niveaux.</span>';
+    showToast(msg);
+  });
 });
 
 /* ============================================================
@@ -7171,7 +7262,12 @@ function applyStripeUnlock(key){
   if(applyStripeUnlock(unlockKey)){
     saveMemberData();
     renderDashboard();
-    showToast('<b>Achat confirmé, merci !</b><br><span style="color:var(--muted);font-size:.8em;">Ton contenu est débloqué dans ton espace membre.</span>');
+    if(isPhysicalUnlockKey(unlockKey)){
+      notifyAdminPhysicalOrder(unlockKey);
+      showToast('<b>Achat confirmé, merci !</b><br><span style="color:var(--muted);font-size:.8em;">Version numérique débloquée immédiatement · ton exemplaire physique va être expédié.</span>');
+    } else {
+      showToast('<b>Achat confirmé, merci !</b><br><span style="color:var(--muted);font-size:.8em;">Ton contenu est débloqué dans ton espace membre.</span>');
+    }
   }
   /* Nettoie l'URL pour éviter un nouveau déblocage si la page est rechargée ou l'URL repartagée */
   history.replaceState({}, '', window.location.pathname + window.location.hash);
@@ -7228,6 +7324,9 @@ planForm.addEventListener('submit', e=>{
 
   /* Le prénom saisi devient le nom du membre, affiché partout sur le site (espace membre, etc.) */
   MEMBER_DATA.name = name;
+  MEMBER_DATA.email = email;
+  MEMBER_DATA.phone = phone;
+  MEMBER_DATA.address = address;
   saveMemberData();
   renderDashboard();
 
@@ -7239,7 +7338,8 @@ planForm.addEventListener('submit', e=>{
     emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ADMIN, {
       to_email: ADMIN_EMAIL, lead_name: name, lead_phone: phone,
       lead_email: email, lead_address: address,
-      lead_date: new Date().toLocaleString('fr-FR')
+      lead_date: new Date().toLocaleString('fr-FR'),
+      lead_product: 'Nouveau Plan gratuit — ' + name
     }).catch(err=>console.error('EmailJS admin:', err));
     /* email client optionnel : seulement si un vrai template client a été configuré */
     const clientTemplateReady = EMAILJS_TEMPLATE_CLIENT.indexOf('COLLEZ_ICI')===-1;
